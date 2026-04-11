@@ -34,3 +34,90 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+# Sistema de Predicción de Demanda
+
+Proyecto hecho con **Next.js + Prisma + PostgreSQL**
+
+---
+
+## ⚙️ Setup rápido
+
+1. Instalar dependencias:
+
+```bash
+npm install
+```
+
+2. Configurar `.env`:
+
+```env
+DATABASE_URL="postgresql://postgres:admin@localhost:5432/postgres"
+```
+
+3. Crear tablas:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+4. Generar cliente:
+
+```bash
+npx prisma generate
+```
+
+5. Ejecutar proyecto:
+
+```bash
+npm run dev
+```
+
+---
+
+## 🗄️ Prisma
+
+Prisma se usa para:
+
+* Crear tablas (migraciones)
+* Conectar con la base de datos
+* Hacer queries desde el backend
+
+---
+
+## 👤 Usuario (IMPORTANTE)
+
+El sistema usa temporalmente:
+
+```ts
+const userId = "1"
+```
+
+👉 Debes crear un usuario en la base de datos y poner su `id = "1"`
+
+Si no haces esto:
+
+* No funcionarán las APIs
+* No verás datos
+
+---
+
+## 📊 Flujo básico
+
+```txt
+XML → Upload → Confirm → Base de datos → Predicción
+```
+
+---
+
+## 📌 Comandos útiles
+
+```bash
+npx prisma migrate dev
+npx prisma generate
+npx prisma studio
+npm run dev
+```
+
+---

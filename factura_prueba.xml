@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura>
+  <infoTributaria>
+    <razonSocial>Empresa Demo</razonSocial>
+    <ruc>1234567890001</ruc>
+  </infoTributaria>
+
+  <detalles>
+    <detalle>
+      <descripcion>Producto A</descripcion>
+      <cantidad>2.00</cantidad>
+      <precioUnitario>10.00</precioUnitario>
+    </detalle>
+
+    <detalle>
+      <descripcion>Producto B</descripcion>
+      <cantidad>5.00</cantidad>
+      <precioUnitario>3.50</precioUnitario>
+    </detalle>
+
+    <detalle>
+      <descripcion>Producto No Registrado</descripcion>
+      <cantidad>1.00</cantidad>
+      <precioUnitario>20.00</precioUnitario>
+    </detalle>
+  </detalles>
+</factura>

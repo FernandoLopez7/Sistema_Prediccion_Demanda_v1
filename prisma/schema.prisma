@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  googleId  String?  @unique
+  name      String?
+  createdAt DateTime @default(now())
+  products  Product[]
+  materials Material[]
+  sales     Sale[]
+}
+
+model Product {
+  id           String       @id @default(cuid())
+  userId       String
+  name         String
+  code         String?
+  unit         String
+  safetyStock  Float        @default(0)
+  active       Boolean      @default(true)
+  user         User         @relation(fields: [userId], references: [id])
+  recipes      Recipe[]
+  sales        Sale[]
+  createdAt    DateTime     @default(now())
+}
+
+model Material {
+  id           String     @id @default(cuid())
+  userId       String
+  name         String
+  code         String?
+  unit         String
+  stock        Float      @default(0)
+  reorderPoint Float?
+  user         User       @relation(fields: [userId], references: [id])
+  recipes      Recipe[]
+  createdAt    DateTime   @default(now())
+}
+
+model Recipe {
+  id          String   @id @default(cuid())
+  productId   String
+  materialId  String
+  quantity    Float
+  product     Product  @relation(fields: [productId], references: [id])
+  material    Material @relation(fields: [materialId], references: [id])
+
+  @@unique([productId, materialId])
+}
+
+model Sale {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  quantity    Float
+  saleDate    DateTime
+  xmlFilename String?
+  user        User     @relation(fields: [userId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+  createdAt   DateTime @default(now())
+}
