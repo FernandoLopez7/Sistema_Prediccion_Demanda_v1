@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,70 +8,62 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  googleId  String?  @unique @map("google_id")
+  id        String     @id @default(cuid())
+  email     String     @unique
+  googleId  String?    @unique @map("google_id")
   name      String?
-  createdAt DateTime @default(now()) @map("created_at")
-
-  products  Product[]
+  createdAt DateTime   @default(now()) @map("created_at")
   materials Material[]
+  products  Product[]
   sales     Sale[]
 
   @@map("users")
 }
 
 model Product {
-  id          String    @id @default(cuid())
-  userId      String    @map("user_id")
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
   name        String
   code        String?
   unit        String
-  safetyStock Float     @default(0) @map("safety_stock")
-  active      Boolean   @default(true)
-  createdAt   DateTime  @default(now()) @map("created_at")
-
-  user     User     @relation(fields: [userId], references: [id])
-  recipes  Recipe[]
-  sales    Sale[]
+  safetyStock Float    @default(0) @map("safety_stock")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id])
+  recipes     Recipe[]
+  sales       Sale[]
 
   @@map("products")
 }
 
 model Material {
-  id           String    @id @default(cuid())
-  userId       String    @map("user_id")
-
-  name         String    @map("producto")
-  code         String?   @map("codificacion")
-  unit         String    @map("unidad")
-  stock        Float     @default(0) @map("actual")
-
-  // Campos del CSV
-  previous     Float?    @map("anterior")
-  entries      Float?    @map("entradas")
-  exits        Float?    @map("salidas")
-  average      Float?    @map("promedio")
-  unitPrice    Float?    @map("precio_unitario")
-  warehouse    String?   @map("bodega_insumos")
-
-  reorderPoint Float?    @map("reorder_point")
-  createdAt    DateTime  @default(now()) @map("created_at")
-
-  user     User     @relation(fields: [userId], references: [id])
-  recipes  Recipe[]
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  name         String   @map("producto")
+  code         String?  @map("codificacion")
+  unit         String   @map("unidad")
+  stock        Float    @default(0) @map("actual")
+  previous     Float?   @map("anterior")
+  entries      Float?   @map("entradas")
+  exits        Float?   @map("salidas")
+  average      Float?   @map("promedio")
+  unitPrice    Float?   @map("precio_unitario")
+  warehouse    String?  @map("bodega_insumos")
+  reorderPoint Float?   @map("reorder_point")
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id])
+  recipes      Recipe[]
 
   @@map("materials")
 }
 
 model Recipe {
-  id         String  @id @default(cuid())
-  productId  String  @map("product_id")
-  materialId String  @map("material_id")
+  id         String   @id @default(cuid())
+  productId  String   @map("product_id")
+  materialId String   @map("material_id")
   quantity   Float
-
-  product  Product  @relation(fields: [productId], references: [id])
-  material Material @relation(fields: [materialId], references: [id])
+  material   Material @relation(fields: [materialId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
 
   @@unique([productId, materialId])
   @@map("recipes")
@@ -86,14 +73,12 @@ model Sale {
   id          String   @id @default(cuid())
   userId      String   @map("user_id")
   productId   String   @map("product_id")
-
   quantity    Float
   saleDate    DateTime @map("sale_date")
   xmlFilename String?  @map("xml_filename")
   createdAt   DateTime @default(now()) @map("created_at")
-
-  user    User    @relation(fields: [userId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
 
   @@map("sales")
 }

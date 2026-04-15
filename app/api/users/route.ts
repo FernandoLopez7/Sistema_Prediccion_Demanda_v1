@@ -9,6 +9,7 @@ export async function GET() {
 
     return NextResponse.json(users)
   } catch (error) {
+    console.error(error)
     return NextResponse.json(
       { error: 'Error al obtener usuarios' },
       { status: 500 }
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(user)
   } catch (error) {
+    console.error(error)
     return NextResponse.json(
       { error: 'Error al crear usuario' },
       { status: 500 }
