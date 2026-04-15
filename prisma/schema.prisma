@@ -15,60 +15,85 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  googleId  String?  @unique
+  googleId  String?  @unique @map("google_id")
   name      String?
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+
   products  Product[]
   materials Material[]
   sales     Sale[]
+
+  @@map("users")
 }
 
 model Product {
-  id           String       @id @default(cuid())
-  userId       String
-  name         String
-  code         String?
-  unit         String
-  safetyStock  Float        @default(0)
-  active       Boolean      @default(true)
-  user         User         @relation(fields: [userId], references: [id])
-  recipes      Recipe[]
-  sales        Sale[]
-  createdAt    DateTime     @default(now())
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  name        String
+  code        String?
+  unit        String
+  safetyStock Float     @default(0) @map("safety_stock")
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  recipes  Recipe[]
+  sales    Sale[]
+
+  @@map("products")
 }
 
 model Material {
-  id           String     @id @default(cuid())
-  userId       String
-  name         String
-  code         String?
-  unit         String
-  stock        Float      @default(0)
-  reorderPoint Float?
-  user         User       @relation(fields: [userId], references: [id])
-  recipes      Recipe[]
-  createdAt    DateTime   @default(now())
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+
+  name         String    @map("producto")
+  code         String?   @map("codificacion")
+  unit         String    @map("unidad")
+  stock        Float     @default(0) @map("actual")
+
+  // Campos del CSV
+  previous     Float?    @map("anterior")
+  entries      Float?    @map("entradas")
+  exits        Float?    @map("salidas")
+  average      Float?    @map("promedio")
+  unitPrice    Float?    @map("precio_unitario")
+  warehouse    String?   @map("bodega_insumos")
+
+  reorderPoint Float?    @map("reorder_point")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  recipes  Recipe[]
+
+  @@map("materials")
 }
 
 model Recipe {
-  id          String   @id @default(cuid())
-  productId   String
-  materialId  String
-  quantity    Float
-  product     Product  @relation(fields: [productId], references: [id])
-  material    Material @relation(fields: [materialId], references: [id])
+  id         String  @id @default(cuid())
+  productId  String  @map("product_id")
+  materialId String  @map("material_id")
+  quantity   Float
+
+  product  Product  @relation(fields: [productId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
 
   @@unique([productId, materialId])
+  @@map("recipes")
 }
 
 model Sale {
   id          String   @id @default(cuid())
-  userId      String
-  productId   String
+  userId      String   @map("user_id")
+  productId   String   @map("product_id")
+
   quantity    Float
-  saleDate    DateTime
-  xmlFilename String?
-  user        User     @relation(fields: [userId], references: [id])
-  product     Product  @relation(fields: [productId], references: [id])
-  createdAt   DateTime @default(now())
+  saleDate    DateTime @map("sale_date")
+  xmlFilename String?  @map("xml_filename")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("sales")
 }
