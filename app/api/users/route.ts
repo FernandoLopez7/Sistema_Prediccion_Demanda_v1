@@ -10,6 +10,7 @@ export async function GET() {
     return NextResponse.json(users)
   } catch (error) {
     console.error(error)
+    console.error("DATABASE_URL:", process.env.DATABASE_URL ?? "undefined")
     return NextResponse.json(
       { error: 'Error al obtener usuarios' },
       { status: 500 }
