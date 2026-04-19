@@ -11,6 +11,7 @@
   "dependencies": {
     "@prisma/client": "6.19.3",
     "fast-xml-parser": "5.5.11",
+    "firebase": "^12.12.0",
     "next": "16.2.3",
     "prisma": "6.19.3",
     "react": "19.2.4",
