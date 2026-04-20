@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AuthGuard } from "../../lib/auth-guard";
 import { useAuth } from "../../lib/auth-context";
 import { useRouter } from "next/navigation";
@@ -17,11 +18,31 @@ function DashboardContent() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center py-6 gap-4">
+            <div className="flex items-center gap-4">
               <h1 className="text-2xl font-bold text-gray-900">
                 Sistema de Predicción de Demanda
               </h1>
+              <nav className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                <Link
+                  href="/dashboard"
+                  className="px-3 py-2 rounded-md hover:bg-gray-100 hover:text-gray-900"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/materials"
+                  className="px-3 py-2 rounded-md hover:bg-gray-100 hover:text-gray-900"
+                >
+                  Materials
+                </Link>
+                <Link
+                  href="/products"
+                  className="px-3 py-2 rounded-md hover:bg-gray-100 hover:text-gray-900"
+                >
+                  Products
+                </Link>
+              </nav>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">
