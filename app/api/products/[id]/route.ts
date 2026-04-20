@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 
+type RecipeInput = {
+  materialId: string
+  quantity: number | string
+}
+
 function getId(req: Request) {
   return new URL(req.url).pathname.split('/').pop()
 }
@@ -10,23 +15,85 @@ export async function PUT(req: Request) {
     const id = getId(req)
     const body = await req.json()
 
+    const {
+      name,
+      code,
+      unit,
+      safetyStock,
+      recipes
+    }: {
+      name: string
+      code?: string
+      unit: string
+      safetyStock?: number
+      recipes: RecipeInput[]
+    } = body
+
     if (!id) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
 
-    const product = await prisma.product.update({
-      where: { id },
-      data: {
-        name: body.name,
-        code: body.code || null,
-        unit: body.unit,
-        safetyStock: Number(body.safetyStock) || 0
+    if (!name || !unit) {
+      return NextResponse.json(
+        { error: 'Nombre y unidad requeridos' },
+        { status: 400 }
+      )
+    }
+
+    if (!recipes || !Array.isArray(recipes) || recipes.length === 0) {
+      return NextResponse.json(
+        { error: 'Debe incluir al menos una receta' },
+        { status: 400 }
+      )
+    }
+
+    const updatedProduct = await prisma.$transaction(async (tx) => {
+      
+      // 1. actualizar producto
+      const product = await tx.product.update({
+        where: { id },
+        data: {
+          name,
+          code: code || null,
+          unit,
+          safetyStock: Number(safetyStock) || 0
+        }
+      })
+
+      // 2. eliminar recetas anteriores
+      await tx.recipe.deleteMany({
+        where: { productId: id }
+      })
+
+      // 3. crear nuevas recetas
+      const validRecipes = recipes
+        .filter((r) => r.materialId && r.quantity)
+        .map((r) => ({
+          materialId: r.materialId,
+          quantity: Number(r.quantity)
+        }))
+
+      for (const r of validRecipes) {
+        await tx.recipe.create({
+          data: {
+            productId: id,
+            materialId: r.materialId,
+            quantity: r.quantity
+          }
+        })
       }
+
+      return product
     })
 
-    return NextResponse.json(product)
+    return NextResponse.json(updatedProduct)
+
   } catch (error) {
-    return NextResponse.json({ error: 'Error al actualizar' }, { status: 500 })
+    console.error("PUT /products error:", error)
+    return NextResponse.json(
+      { error: 'Error al actualizar producto' },
+      { status: 500 }
+    )
   }
 }
 
@@ -35,15 +102,31 @@ export async function DELETE(req: Request) {
     const id = getId(req)
 
     if (!id) {
-      return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'ID requerido' },
+        { status: 400 }
+      )
     }
 
-    await prisma.product.delete({
-      where: { id }
+    await prisma.$transaction(async (tx) => {
+      // 1. eliminar recetas relacionadas
+      await tx.recipe.deleteMany({
+        where: { productId: id }
+      })
+
+      // 2. eliminar producto
+      await tx.product.delete({
+        where: { id }
+      })
     })
 
     return NextResponse.json({ ok: true })
+
   } catch (error) {
-    return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 })
+    console.error("DELETE /products error:", error)
+    return NextResponse.json(
+      { error: 'Error al eliminar producto' },
+      { status: 500 }
+    )
   }
 }
