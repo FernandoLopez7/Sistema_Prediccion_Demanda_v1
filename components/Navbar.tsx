@@ -24,19 +24,25 @@ export default function Navbar() {
                 href="/dashboard"
                 className="px-3 py-2 rounded-md hover:bg-gray-700 hover:text-white"
               >
-                Dashboard
+                Inicio
               </Link>
               <Link
                 href="/materials"
                 className="px-3 py-2 rounded-md hover:bg-gray-700 hover:text-white"
               >
-                Materials
+                Materiales
               </Link>
               <Link
                 href="/products"
                 className="px-3 py-2 rounded-md hover:bg-gray-700 hover:text-white"
               >
-                Products
+                Productos
+              </Link>
+              <Link
+                href="/sales"
+                className="px-3 py-2 rounded-md hover:bg-gray-700 hover:text-white"
+              >
+                Ventas
               </Link>
             </nav>
           </div>

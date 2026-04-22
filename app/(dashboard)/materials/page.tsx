@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Modal from "../../../components/Modal";
 
 type Material = {
   id: string;
@@ -19,6 +20,7 @@ type Material = {
 
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -54,9 +56,7 @@ export default function MaterialsPage() {
   // SAVE
   // =============================
   const saveMaterial = async () => {
-    const url = editingId
-      ? `/api/materials/${editingId}`
-      : "/api/materials";
+    const url = editingId ? `/api/materials/${editingId}` : "/api/materials";
 
     const method = editingId ? "PUT" : "POST";
 
@@ -79,6 +79,7 @@ export default function MaterialsPage() {
     });
 
     resetForm();
+    setIsModalOpen(false);
     fetchMaterials();
   };
 
@@ -100,6 +101,7 @@ export default function MaterialsPage() {
     setUnitPrice(m.unitPrice?.toString() || "");
     setWarehouse(m.warehouse || "");
     setReorderPoint(m.reorderPoint?.toString() || "");
+    setIsModalOpen(true);
   };
 
   const resetForm = () => {
@@ -115,6 +117,7 @@ export default function MaterialsPage() {
     setUnitPrice("");
     setWarehouse("");
     setReorderPoint("");
+    setIsModalOpen(false);
   };
 
   // =============================
@@ -123,54 +126,74 @@ export default function MaterialsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          Materiales
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Materiales</h1>
+          <button
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium"
+          >
+            + Agregar Material
+          </button>
+        </div>
 
-        {/* FORM */}
-        <div className="bg-white p-6 rounded-lg shadow mb-8 space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { val: name, set: setName, ph: "Nombre" },
-              { val: code, set: setCode, ph: "Código" },
-              { val: unit, set: setUnit, ph: "Unidad" },
-              { val: stock, set: setStock, ph: "Stock" },
-              { val: previous, set: setPrevious, ph: "Anterior" },
-              { val: entries, set: setEntries, ph: "Entradas" },
-              { val: exits, set: setExits, ph: "Salidas" },
-              { val: average, set: setAverage, ph: "Promedio" },
-              { val: unitPrice, set: setUnitPrice, ph: "Precio Unitario" },
-              { val: warehouse, set: setWarehouse, ph: "Bodega" },
-              { val: reorderPoint, set: setReorderPoint, ph: "Punto Reorden" },
-            ].map((f, i) => (
-              <input
-                key={i}
-                className="border border-gray-300 p-2 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder={f.ph}
-                value={f.val}
-                onChange={(e) => f.set(e.target.value)}
-              />
-            ))}
-          </div>
+        {/* MODAL */}
+        <Modal
+          isOpen={isModalOpen}
+          title={editingId ? "Editar Material" : "Crear Material"}
+          onClose={resetForm}
+        >
+          <div className="space-y-5">
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { val: name, set: setName, ph: "Nombre" },
+                { val: code, set: setCode, ph: "Código" },
+                { val: unit, set: setUnit, ph: "Unidad" },
+                { val: stock, set: setStock, ph: "Stock" },
+                { val: previous, set: setPrevious, ph: "Anterior" },
+                { val: entries, set: setEntries, ph: "Entradas" },
+                { val: exits, set: setExits, ph: "Salidas" },
+                { val: average, set: setAverage, ph: "Promedio" },
+                { val: unitPrice, set: setUnitPrice, ph: "Precio Unitario" },
+                { val: warehouse, set: setWarehouse, ph: "Bodega" },
+                {
+                  val: reorderPoint,
+                  set: setReorderPoint,
+                  ph: "Punto Reorden",
+                },
+              ].map((f, i) => (
+                <div key={i} className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 mb-1.5">
+                    {f.ph}
+                  </label>
+                  <input
+                    className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    placeholder={f.ph}
+                    value={f.val}
+                    onChange={(e) => f.set(e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={saveMaterial}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
-            >
-              {editingId ? "Actualizar" : "Crear"}
-            </button>
-
-            {editingId && (
+            <div className="flex gap-3 pt-6 border-t border-gray-200">
+              <button
+                onClick={saveMaterial}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium transition"
+              >
+                {editingId ? "Actualizar" : "Crear"}
+              </button>
               <button
                 onClick={resetForm}
-                className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition"
               >
                 Cancelar
               </button>
-            )}
+            </div>
           </div>
-        </div>
+        </Modal>
 
         {/* TABLE */}
         <div className="bg-white p-6 rounded-lg shadow overflow-auto">
