@@ -14,32 +14,35 @@ enum Role {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  googleId  String?    @unique @map("google_id")
+  id        String   @id @default(cuid())
+  email     String   @unique
+  googleId  String?  @unique @map("google_id")
   name      String?
-  role      Role       @default(VIEWER) // 👈 NUEVO
-  createdAt DateTime   @default(now()) @map("created_at")
+  role      Role     @default(VIEWER) // 👈 NUEVO
+  createdAt DateTime @default(now()) @map("created_at")
 
-  materials Material[]
-  products  Product[]
-  sales     Sale[]
+  stockMovements StockMovement[]
+  materials      Material[]
+  products       Product[]
+  sales          Sale[]
 
   @@map("users")
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  name        String
-  code        String?
-  unit        String
-  safetyStock Float    @default(0) @map("safety_stock")
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
-  user        User     @relation(fields: [userId], references: [id])
-  recipes     Recipe[]
-  sales       Sale[]
+  id             String          @id @default(cuid())
+  userId         String          @map("user_id")
+  name           String
+  code           String?
+  unit           String
+  stock          Float           @default(0) // 👈 NUEVO
+  safetyStock    Float           @default(0) @map("safety_stock")
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  user           User            @relation(fields: [userId], references: [id])
+  recipes        Recipe[]
+  sales          Sale[]
+  stockMovements StockMovement[]
 
   @@map("products")
 }
@@ -89,4 +92,26 @@ model Sale {
   user        User     @relation(fields: [userId], references: [id])
 
   @@map("sales")
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model StockMovement {
+  id        String       @id @default(cuid())
+  productId String       @map("product_id")
+  userId    String       @map("user_id")
+  quantity  Float?
+  type      MovementType // "IN" | "OUT" | "ADJUSTMENT"
+  previousStock Float?
+  newStock      Float?
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("stock_movements")
 }

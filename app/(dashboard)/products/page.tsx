@@ -18,6 +18,7 @@ type Product = {
   code: string | null;
   unit: string;
   safetyStock: number;
+  stock: number; // 👈 NUEVO
 };
 
 type ProductWithRecipes = Product & {
@@ -32,6 +33,7 @@ export default function ProductsPage() {
   const [code, setCode] = useState("");
   const [unit, setUnit] = useState("");
   const [safetyStock, setSafetyStock] = useState("");
+  const [stock, setStock] = useState("");
 
   const [recipes, setRecipes] = useState<RecipeItem[]>([]);
 
@@ -78,9 +80,7 @@ export default function ProductsPage() {
   // SAVE
   // =============================
   const saveProduct = async () => {
-    const url = editingId
-      ? `/api/products/${editingId}`
-      : "/api/products";
+    const url = editingId ? `/api/products/${editingId}` : "/api/products";
 
     const method = editingId ? "PUT" : "POST";
 
@@ -92,6 +92,7 @@ export default function ProductsPage() {
         code,
         unit,
         safetyStock,
+        stock, // 👈 NUEVO
         recipes,
       }),
     });
@@ -106,6 +107,7 @@ export default function ProductsPage() {
     setCode(p.code || "");
     setUnit(p.unit);
     setSafetyStock(p.safetyStock.toString());
+    setStock(p.stock?.toString() ?? "0");
 
     // 🔥 cargar recetas existentes
     if (p.recipes) {
@@ -113,7 +115,7 @@ export default function ProductsPage() {
         p.recipes.map((r: { materialId: string; quantity: number }) => ({
           materialId: r.materialId,
           quantity: r.quantity.toString(),
-        }))
+        })),
       );
     }
   };
@@ -132,6 +134,7 @@ export default function ProductsPage() {
     setCode("");
     setUnit("");
     setSafetyStock("");
+    setStock("");
     setRecipes([]);
   };
 
@@ -169,6 +172,12 @@ export default function ProductsPage() {
               placeholder="Stock Seguridad"
               value={safetyStock}
               onChange={(e) => setSafetyStock(e.target.value)}
+            />
+            <input
+              className="border p-2 bg-white text-gray-900 placeholder-gray-400 rounded"
+              placeholder="Stock"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
             />
           </div>
 
@@ -262,6 +271,7 @@ export default function ProductsPage() {
                   <td className="py-2">{p.code}</td>
                   <td className="py-2">{p.unit}</td>
                   <td className="py-2 font-medium">{p.safetyStock}</td>
+                  <td className="py-2 font-medium">{p.stock}</td>
 
                   <td className="py-2 flex gap-2">
                     <button
@@ -276,6 +286,28 @@ export default function ProductsPage() {
                       className="text-red-600 hover:underline text-sm"
                     >
                       Eliminar
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const qty = prompt("Cantidad a agregar");
+                        if (!qty) return;
+
+                        await fetch("/api/products/add-stock", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            productId: p.id,
+                            quantity: Number(qty),
+                          }),
+                        });
+
+                        fetchProducts();
+                      }}
+                      className="text-green-600 hover:underline text-sm"
+                    >
+                      + Stock
                     </button>
                   </td>
                 </tr>

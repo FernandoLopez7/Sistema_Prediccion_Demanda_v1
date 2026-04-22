@@ -1,54 +1,55 @@
-import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
 type RecipeInput = {
-  materialId: string
-  quantity: number | string
-}
+  materialId: string;
+  quantity: number | string;
+};
 
 function getId(req: Request) {
-  return new URL(req.url).pathname.split('/').pop()
+  return new URL(req.url).pathname.split("/").pop();
 }
 
 export async function PUT(req: Request) {
   try {
-    const id = getId(req)
-    const body = await req.json()
+    const id = getId(req);
+    const body = await req.json();
 
     const {
       name,
       code,
       unit,
       safetyStock,
-      recipes
+      stock, // 👈 NUEVO
+      recipes,
     }: {
-      name: string
-      code?: string
-      unit: string
-      safetyStock?: number
-      recipes: RecipeInput[]
-    } = body
+      name: string;
+      code?: string;
+      unit: string;
+      safetyStock?: number;
+      stock?: number; // 👈 NUEVO
+      recipes: RecipeInput[];
+    } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
+      return NextResponse.json({ error: "ID requerido" }, { status: 400 });
     }
 
     if (!name || !unit) {
       return NextResponse.json(
-        { error: 'Nombre y unidad requeridos' },
-        { status: 400 }
-      )
+        { error: "Nombre y unidad requeridos" },
+        { status: 400 },
+      );
     }
 
     if (!recipes || !Array.isArray(recipes) || recipes.length === 0) {
       return NextResponse.json(
-        { error: 'Debe incluir al menos una receta' },
-        { status: 400 }
-      )
+        { error: "Debe incluir al menos una receta" },
+        { status: 400 },
+      );
     }
 
     const updatedProduct = await prisma.$transaction(async (tx) => {
-      
       // 1. actualizar producto
       const product = await tx.product.update({
         where: { id },
@@ -56,77 +57,73 @@ export async function PUT(req: Request) {
           name,
           code: code || null,
           unit,
-          safetyStock: Number(safetyStock) || 0
-        }
-      })
+          ...(stock !== undefined && { stock: Number(stock) }), // 👈 NUEVO
+          safetyStock: Number(safetyStock) || 0,
+        },
+      });
 
       // 2. eliminar recetas anteriores
       await tx.recipe.deleteMany({
-        where: { productId: id }
-      })
+        where: { productId: id },
+      });
 
       // 3. crear nuevas recetas
       const validRecipes = recipes
         .filter((r) => r.materialId && r.quantity)
         .map((r) => ({
           materialId: r.materialId,
-          quantity: Number(r.quantity)
-        }))
+          quantity: Number(r.quantity),
+        }));
 
       for (const r of validRecipes) {
         await tx.recipe.create({
           data: {
             productId: id,
             materialId: r.materialId,
-            quantity: r.quantity
-          }
-        })
+            quantity: r.quantity,
+          },
+        });
       }
 
-      return product
-    })
+      return product;
+    });
 
-    return NextResponse.json(updatedProduct)
-
+    return NextResponse.json(updatedProduct);
   } catch (error) {
-    console.error("PUT /products error:", error)
+    console.error("PUT /products error:", error);
     return NextResponse.json(
-      { error: 'Error al actualizar producto' },
-      { status: 500 }
-    )
+      { error: "Error al actualizar producto" },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(req: Request) {
   try {
-    const id = getId(req)
+    const id = getId(req);
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'ID requerido' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "ID requerido" }, { status: 400 });
     }
 
     await prisma.$transaction(async (tx) => {
       // 1. eliminar recetas relacionadas
       await tx.recipe.deleteMany({
-        where: { productId: id }
-      })
+        where: { productId: id },
+      });
 
       // 2. eliminar producto
       await tx.product.delete({
-        where: { id }
-      })
-    })
+        where: { id },
+      });
+    });
 
-    return NextResponse.json({ ok: true })
-
+    return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("DELETE /products error:", error)
+    console.error("DELETE /products error:", error);
     return NextResponse.json(
-      { error: 'Error al eliminar producto' },
-      { status: 500 }
-    )
+      { error: "Error al eliminar producto" },
+      { status: 500 },
+    );
   }
 }

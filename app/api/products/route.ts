@@ -42,12 +42,14 @@ export async function POST(req: Request) {
       code,
       unit,
       safetyStock,
+      stock, // 👈 NUEVO
       recipes
     }: {
       name: string
       code?: string
       unit: string
       safetyStock?: number
+      stock?: number // 👈 NUEVO
       recipes: RecipeInput[]
     } = body
 
@@ -72,6 +74,7 @@ export async function POST(req: Request) {
           name,
           code: code || null,
           unit,
+          stock: Number(stock) || 0, // 👈 NUEVO
           safetyStock: Number(safetyStock) || 0
         }
       })
