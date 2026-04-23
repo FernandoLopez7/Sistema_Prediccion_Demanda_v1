@@ -19,7 +19,7 @@ type Product = {
   code: string | null;
   unit: string;
   safetyStock: number;
-  stock: number; // 👈 NUEVO
+  stock: number; // 👈 agregar
 };
 
 type ProductWithRecipes = Product & {
@@ -83,7 +83,6 @@ export default function ProductsPage() {
   // =============================
   const saveProduct = async () => {
     const url = editingId ? `/api/products/${editingId}` : "/api/products";
-    const url = editingId ? `/api/products/${editingId}` : "/api/products";
 
     const method = editingId ? "PUT" : "POST";
 
@@ -95,7 +94,7 @@ export default function ProductsPage() {
         code,
         unit,
         safetyStock,
-        stock, // 👈 NUEVO
+        stock, // 👈
         recipes,
       }),
     });
@@ -110,7 +109,7 @@ export default function ProductsPage() {
     setCode(p.code || "");
     setUnit(p.unit);
     setSafetyStock(p.safetyStock.toString());
-    setStock(p.stock?.toString() ?? "0");
+    setStock(p.stock?.toString() ?? "0"); // 👈 FALTABA
 
     // 🔥 cargar recetas existentes
     if (p.recipes) {
@@ -118,7 +117,6 @@ export default function ProductsPage() {
         p.recipes.map((r: { materialId: string; quantity: number }) => ({
           materialId: r.materialId,
           quantity: r.quantity.toString(),
-        })),
         })),
       );
     }
@@ -140,7 +138,7 @@ export default function ProductsPage() {
     setCode("");
     setUnit("");
     setSafetyStock("");
-    setStock("");
+    setStock(""); // 👈 FALTABA
     setRecipes([]);
     setIsModalOpen(false);
   };
@@ -216,43 +214,18 @@ export default function ProductsPage() {
                   onChange={(e) => setSafetyStock(e.target.value)}
                 />
               </div>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Stock
+                </label>
+                <input
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Cantidad actual en stock"
+                  value={stock}
+                  onChange={(e) => setSafetyStock(e.target.value)}
+                />
+              </div>
             </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Productos</h1>
-
-        {/* FORM */}
-        <div className="bg-white p-6 rounded-lg shadow mb-8 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              className="border p-2 bg-white text-gray-900 placeholder-gray-400 rounded"
-              placeholder="Nombre"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <input
-              className="border p-2 bg-white text-gray-900 placeholder-gray-400 rounded"
-              placeholder="Código"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <input
-              className="border p-2 bg-white text-gray-900 placeholder-gray-400 rounded"
-              placeholder="Unidad"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-            />
-            <input
-              className="border p-2 bg-white text-gray-900 placeholder-gray-400 rounded"
-              placeholder="Stock Seguridad"
-              value={safetyStock}
-              onChange={(e) => setSafetyStock(e.target.value)}
-            />
-            <input
-              className="border p-2 bg-white text-gray-900 placeholder-gray-400 rounded"
-              placeholder="Stock"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-            />
-          </div>
 
             {/* RECIPES */}
             <div className="border-t border-gray-200 pt-6">
