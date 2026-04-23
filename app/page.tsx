@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-black relative"
+      className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-black relative"
       style={{
         backgroundImage: "url('/background-industrial.jpg')",
         backgroundSize: "cover",
