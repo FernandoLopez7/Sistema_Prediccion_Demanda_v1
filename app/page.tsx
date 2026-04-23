@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../lib/auth-context";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -47,7 +48,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-black relative"
+      className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-black relative"
       style={{
         backgroundImage: "url('/background-industrial.jpg')",
         backgroundSize: "cover",
@@ -56,10 +57,18 @@ export default function LoginPage() {
     >
       <div className="absolute inset-0 bg-black opacity-50"></div>
       <div className="relative z-10 max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold text-black">
-            SISTEMA DE GESTIÓN BiMetal
-          </h2>
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/logo-bm.png"
+              alt="BiMetal Logo"
+              width={200}
+              height={90}
+              priority
+            />
+          </div>
+
+          <h1 className="text-xl font-extrabold text-black">SGI</h1>
           <p className="mt-2 text-center text-sm text-gray-600">
             Inicia sesión en tu cuenta
           </p>

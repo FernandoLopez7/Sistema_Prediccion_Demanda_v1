@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "../lib/auth-context";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -14,11 +15,19 @@ export default function Navbar() {
   };
 
   return (
-    <header className="bg-black shadow">
+    <header className="bg-black shadow fixed top-0 w-full z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center py-6 gap-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-white">SGD</h1>
+            <div className="flex">
+              <Image
+                src="/logo-bm-black.png"
+                alt="BiMetal Logo"
+                width={120}
+                height={50}
+                priority
+              />
+            </div>
             <nav className="flex flex-wrap items-center gap-2 text-sm text-white">
               <Link
                 href="/dashboard"
