@@ -14,7 +14,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="bg-black shadow">
+    <header className="bg-black shadow fixed top-0 w-full z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center py-6 gap-4">
           <div className="flex items-center gap-4">

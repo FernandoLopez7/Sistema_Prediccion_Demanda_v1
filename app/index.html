@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Ubicación del usuario</title>
+  </head>
+  <body>
+    <h2>Obtener mi ubicación</h2>
+    <button onclick="obtenerUbicacion()">Compartir ubicación</button>
+
+    <p id="resultado"></p>
+
+    <script>
+      function obtenerUbicacion() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function (posicion) {
+              const lat = posicion.coords.latitude;
+              const lon = posicion.coords.longitude;
+
+              document.getElementById("resultado").innerText =
+                "Latitud: " + lat + " | Longitud: " + lon;
+            },
+            function (error) {
+              document.getElementById("resultado").innerText =
+                "Error al obtener ubicación: " + error.message;
+            },
+          );
+        } else {
+          document.getElementById("resultado").innerText =
+            "Geolocalización no soportada en este navegador.";
+        }
+      }
+    </script>
+  </body>
+</html>
