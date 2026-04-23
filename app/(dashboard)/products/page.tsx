@@ -316,6 +316,7 @@ export default function ProductsPage() {
                 <th className="py-2">Nombre</th>
                 <th className="py-2">Código</th>
                 <th className="py-2">Unidad</th>
+                <th className="py-2">Safety Stock</th>
                 <th className="py-2">Stock</th>
                 <th className="py-2">Acciones</th>
               </tr>
