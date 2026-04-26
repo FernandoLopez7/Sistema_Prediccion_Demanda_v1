@@ -53,6 +53,12 @@ export default function Navbar() {
               >
                 Ventas
               </Link>
+              <Link
+                href="/projections"
+                className="px-3 py-2 rounded-md hover:bg-gray-700 hover:text-white"
+              >
+                Proyecciones
+              </Link>
             </nav>
           </div>
           <div className="flex items-center space-x-4">

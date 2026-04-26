@@ -31,25 +31,27 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-button {
-  background-color: var(--primary);
-  color: var(--foreground);
-  transition: background-color 0.3s;
-}
+@layer base {
+  button {
+    background-color: var(--primary);
+    color: var(--foreground);
+    transition: background-color 0.3s;
+  }
 
-button:hover {
-  background-color: var(--primary-hover);
-}
+  button:hover {
+    background-color: var(--primary-hover);
+  }
 
-input,
-select {
-  border-color: var(--secondary-medium);
-  background-color: var(--secondary-light);
-  color: var(--secondary-dark);
-}
+  input,
+  select {
+    border-color: var(--secondary-medium);
+    background-color: var(--secondary-light);
+    color: var(--secondary-dark);
+  }
 
-input:focus,
-select:focus {
-  border-color: var(--primary);
-  outline: none;
+  input:focus,
+  select:focus {
+    border-color: var(--primary);
+    outline: none;
+  }
 }
