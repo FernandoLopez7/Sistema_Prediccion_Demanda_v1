@@ -9,9 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@heroicons/react": "^2.2.0",
+    "@heroicons/react": "2.2.0",
     "@prisma/client": "6.19.3",
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "8.21.3",
     "fast-xml-parser": "5.5.11",
     "firebase": "12.12.0",
     "next": "16.2.3",
