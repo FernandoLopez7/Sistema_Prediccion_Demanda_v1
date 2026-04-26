@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Modal from "../../../components/Modal";
+import { PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 type Material = {
   id: string;
@@ -40,6 +41,12 @@ export default function ProductsPage() {
   const [recipes, setRecipes] = useState<RecipeItem[]>([]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Estados para búsqueda y paginación
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"name" | "stock" | "code">("name");
+  const itemsPerPage = 15;
   // FETCH
   // =============================
   const fetchProducts = async () => {
@@ -142,6 +149,36 @@ export default function ProductsPage() {
     setRecipes([]);
     setIsModalOpen(false);
   };
+
+  // =============================
+  // FILTRADO Y PAGINACIÓN
+  // =============================
+  const filteredProducts = products
+    .filter(
+      (product) =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.code &&
+          product.code.toLowerCase().includes(searchTerm.toLowerCase())),
+    )
+    .sort((a, b) => {
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      } else if (sortBy === "code") {
+        return (a.code || "").localeCompare(b.code || "");
+      }
+      return b.stock - a.stock;
+    });
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // =============================
   // UI
@@ -310,6 +347,46 @@ export default function ProductsPage() {
 
         {/* TABLE */}
         <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Lista de Productos
+            </h2>
+            <div className="flex gap-3">
+              <div className="relative">
+                <svg
+                  className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o código..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="name">Ordenar por: Nombre</option>
+                <option value="code">Ordenar por: Código</option>
+                <option value="stock">Ordenar por: Stock</option>
+              </select>
+            </div>
+          </div>
+
           <table className="w-full text-sm text-gray-800">
             <thead>
               <tr className="text-left border-b border-gray-200 text-gray-600">
@@ -322,7 +399,7 @@ export default function ProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p: ProductWithRecipes) => (
+              {paginatedProducts.map((p: ProductWithRecipes) => (
                 <tr
                   key={p.id}
                   className="border-b border-gray-100 hover:bg-gray-50 transition"
@@ -333,18 +410,22 @@ export default function ProductsPage() {
                   <td className="py-2 font-medium">{p.safetyStock}</td>
                   <td className="py-2 font-medium">{p.stock}</td>
 
-                  <td className="py-2 flex gap-2">
+                  <td className="py-2 flex gap-1">
                     <button
                       onClick={() => startEdit(p)}
-                      className="text-blue-600 hover:underline text-sm"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200"
+                      title="Editar producto"
                     >
+                      <PencilIcon className="w-4 h-4" />
                       Editar
                     </button>
 
                     <button
                       onClick={() => deleteProduct(p.id)}
-                      className="text-red-600 hover:underline text-sm"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors duration-200"
+                      title="Eliminar producto"
                     >
+                      <TrashIcon className="w-4 h-4" />
                       Eliminar
                     </button>
                     <button
@@ -365,15 +446,76 @@ export default function ProductsPage() {
 
                         fetchProducts();
                       }}
-                      className="text-green-600 hover:underline text-sm"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 hover:border-green-300 transition-colors duration-200"
+                      title="Agregar stock"
                     >
-                      + Stock
+                      <PlusIcon className="w-4 h-4" />+ Stock
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <div className="text-sm text-gray-700">
+                Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
+                {Math.min(currentPage * itemsPerPage, filteredProducts.length)}{" "}
+                de {filteredProducts.length} productos
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-colors duration-200"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  Anterior
+                </button>
+                <span className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-colors duration-200"
+                >
+                  Siguiente
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

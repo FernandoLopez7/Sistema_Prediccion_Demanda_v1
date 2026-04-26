@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  SortingState,
+  flexRender,
+  createColumnHelper,
+} from "@tanstack/react-table";
 import Modal from "../../../components/Modal";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 type Material = {
   id: string;
@@ -35,6 +46,96 @@ export default function MaterialsPage() {
   const [reorderPoint, setReorderPoint] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Estados para búsqueda, ordenamiento y paginación con TanStack Table
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const itemsPerPage = 15;
+
+  const columnHelper = createColumnHelper<Material>();
+
+  const columns = [
+    columnHelper.accessor("name", {
+      header: () => <span>Nombre</span>,
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("code", {
+      header: () => <span>Código</span>,
+      cell: (info) => info.getValue() ?? "-",
+    }),
+    columnHelper.accessor("unit", {
+      header: () => <span>Unidad</span>,
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("stock", {
+      header: () => <span>Stock</span>,
+      cell: (info) => (
+        <span className="font-medium text-gray-900">{info.getValue()}</span>
+      ),
+    }),
+    columnHelper.accessor("warehouse", {
+      header: () => <span>Bodega</span>,
+      cell: (info) => info.getValue() ?? "-",
+    }),
+    columnHelper.display({
+      id: "acciones",
+      header: () => <span>Acciones</span>,
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button
+            onClick={() => startEdit(row.original)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200"
+            title="Editar material"
+          >
+            <PencilIcon className="w-4 h-4" />
+            Editar
+          </button>
+
+          <button
+            onClick={() => deleteMaterial(row.original.id)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors duration-200"
+            title="Eliminar material"
+          >
+            <TrashIcon className="w-4 h-4" />
+            Eliminar
+          </button>
+        </div>
+      ),
+    }),
+  ];
+
+  const table = useReactTable({
+    data: materials,
+    columns,
+    state: {
+      sorting,
+      globalFilter,
+    },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const value = String(filterValue).toLowerCase();
+      return (
+        String(row.getValue("name")).toLowerCase().includes(value) ||
+        String(row.getValue("code") ?? "")
+          .toLowerCase()
+          .includes(value)
+      );
+    },
+    initialState: {
+      pagination: {
+        pageSize: itemsPerPage,
+      },
+    },
+  });
+
+  useEffect(() => {
+    table.setPageIndex(0);
+  }, [globalFilter]);
 
   // =============================
   // FETCH
@@ -197,48 +298,149 @@ export default function MaterialsPage() {
 
         {/* TABLE */}
         <div className="bg-white p-6 rounded-lg shadow overflow-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Lista de Materiales
+            </h2>
+            <div className="flex gap-3 items-center w-full max-w-xl">
+              <div className="relative flex-1">
+                <svg
+                  className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o código..."
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
           <table className="w-full text-sm text-gray-800">
             <thead>
-              <tr className="text-left border-b border-gray-200 text-gray-600">
-                <th className="py-2">Nombre</th>
-                <th className="py-2">Código</th>
-                <th className="py-2">Unidad</th>
-                <th className="py-2">Stock</th>
-                <th className="py-2">Bodega</th>
-                <th className="py-2">Acciones</th>
-              </tr>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr
+                  key={headerGroup.id}
+                  className="text-left border-b border-gray-200 text-gray-600"
+                >
+                  {headerGroup.headers.map((header) => (
+                    <th key={header.id} className="py-2">
+                      {header.isPlaceholder ? null : (
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="inline-flex items-center gap-1 text-left"
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {{
+                            asc: "▲",
+                            desc: "▼",
+                          }[header.column.getIsSorted() as string] ?? null}
+                        </button>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
             </thead>
             <tbody>
-              {materials.map((m) => (
+              {table.getRowModel().rows.map((row) => (
                 <tr
-                  key={m.id}
+                  key={row.id}
                   className="border-b border-gray-100 hover:bg-gray-50 transition"
                 >
-                  <td className="py-2">{m.name}</td>
-                  <td className="py-2">{m.code}</td>
-                  <td className="py-2">{m.unit}</td>
-                  <td className="py-2 font-medium">{m.stock}</td>
-                  <td className="py-2">{m.warehouse}</td>
-
-                  <td className="py-2 flex gap-2">
-                    <button
-                      onClick={() => startEdit(m)}
-                      className="text-indigo-600 hover:underline"
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      onClick={() => deleteMaterial(m.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Eliminar
-                    </button>
-                  </td>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="py-2 align-top">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {/* Paginación */}
+          {table.getPageCount() > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <div className="text-sm text-gray-700">
+                Mostrando{" "}
+                {table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                  1}{" "}
+                a{" "}
+                {table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                  table.getRowModel().rows.length}{" "}
+                de {table.getFilteredRowModel().rows.length} materiales
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-colors duration-200"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  Anterior
+                </button>
+                <span className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg">
+                  Página {table.getState().pagination.pageIndex + 1} de{" "}
+                  {table.getPageCount()}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-colors duration-200"
+                >
+                  Siguiente
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
