@@ -4,42 +4,47 @@ import { NextResponse } from 'next/server'
 // 🔹 PUT - actualizar unidad
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { name } = await req.json()
+    const { id } = await params;
+    const { name } = await req.json();
 
     const unit = await prisma.unit.update({
-      where: { id: params.id },
+      where: { id },
       data: { name }
-    })
+    });
 
-    return NextResponse.json(unit)
+    return NextResponse.json(unit);
   } catch (error) {
-    console.error("PUT /units error:", error)
+    console.error("PUT /units error:", error);
+
     return NextResponse.json(
       { error: 'Error al actualizar unidad' },
       { status: 500 }
-    )
+    );
   }
 }
 
 // 🔹 DELETE - eliminar unidad
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await prisma.unit.delete({
-      where: { id: params.id }
-    })
+    const { id } = await params;
 
-    return NextResponse.json({ success: true })
+    await prisma.unit.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE /units error:", error)
+    console.error("DELETE /units error:", error);
+
     return NextResponse.json(
       { error: 'Error al eliminar unidad' },
       { status: 500 }
-    )
+    );
   }
 }
