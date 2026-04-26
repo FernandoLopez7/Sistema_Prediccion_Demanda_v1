@@ -1,13 +1,12 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 
-// 🔹 PUT
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const { name } = await req.json()
 
     const unit = await prisma.unit.update({
@@ -26,13 +25,12 @@ export async function PUT(
   }
 }
 
-// 🔹 DELETE
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     await prisma.unit.delete({
       where: { id }

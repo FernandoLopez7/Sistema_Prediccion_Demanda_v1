@@ -4,11 +4,11 @@ import { NextResponse } from 'next/server'
 // 🔹 PUT - actualizar sucursal
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { name } = await req.json()
-    const { id } = params
 
     const branch = await prisma.branch.update({
       where: { id },
@@ -29,10 +29,10 @@ export async function PUT(
 // 🔹 DELETE
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     await prisma.branch.delete({
       where: { id }
