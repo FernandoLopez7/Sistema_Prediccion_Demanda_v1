@@ -7,7 +7,10 @@ type Material = {
   id: string;
   name: string;
   code: string | null;
-  unit: string;
+  unit: { name: string };
+  branch: { name: string };
+  unitId: string;
+  branchId: string;
   stock: number;
   previous: number | null;
   entries: number | null;
@@ -18,13 +21,29 @@ type Material = {
   reorderPoint: number | null;
 };
 
+type Unit = {
+  id: string;
+  name: string;
+};
+
+type Branch = {
+  id: string;
+  name: string;
+};
+
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
-  const [unit, setUnit] = useState("");
+
+  const [unitId, setUnitId] = useState("");
+  const [branchId, setBranchId] = useState("");
+
   const [stock, setStock] = useState("");
   const [previous, setPrevious] = useState("");
   const [entries, setEntries] = useState("");
@@ -45,9 +64,25 @@ export default function MaterialsPage() {
     setMaterials(data);
   };
 
+  const fetchUnits = async () => {
+    const res = await fetch("/api/units");
+    const data = await res.json();
+    setUnits(data);
+  };
+
+  const fetchBranches = async () => {
+    const res = await fetch("/api/branches");
+    const data = await res.json();
+    setBranches(data);
+  };
+
   useEffect(() => {
     const load = async () => {
-      await fetchMaterials();
+      await Promise.all([
+        fetchMaterials(),
+        fetchUnits(),
+        fetchBranches()
+      ]);
     };
     load();
   }, []);
@@ -57,7 +92,6 @@ export default function MaterialsPage() {
   // =============================
   const saveMaterial = async () => {
     const url = editingId ? `/api/materials/${editingId}` : "/api/materials";
-
     const method = editingId ? "PUT" : "POST";
 
     await fetch(url, {
@@ -66,7 +100,8 @@ export default function MaterialsPage() {
       body: JSON.stringify({
         name,
         code,
-        unit,
+        unitId,
+        branchId,
         stock,
         previous,
         entries,
@@ -92,7 +127,8 @@ export default function MaterialsPage() {
     setEditingId(m.id);
     setName(m.name);
     setCode(m.code || "");
-    setUnit(m.unit);
+    setUnitId(m.unitId);
+    setBranchId(m.branchId);
     setStock(m.stock.toString());
     setPrevious(m.previous?.toString() || "");
     setEntries(m.entries?.toString() || "");
@@ -108,7 +144,8 @@ export default function MaterialsPage() {
     setEditingId(null);
     setName("");
     setCode("");
-    setUnit("");
+    setUnitId("");
+    setBranchId("");
     setStock("");
     setPrevious("");
     setEntries("");
@@ -147,35 +184,59 @@ export default function MaterialsPage() {
         >
           <div className="space-y-5">
             <div className="grid grid-cols-3 gap-4">
-              {[
-                { val: name, set: setName, ph: "Nombre" },
-                { val: code, set: setCode, ph: "Código" },
-                { val: unit, set: setUnit, ph: "Unidad" },
-                { val: stock, set: setStock, ph: "Stock" },
-                { val: previous, set: setPrevious, ph: "Anterior" },
-                { val: entries, set: setEntries, ph: "Entradas" },
-                { val: exits, set: setExits, ph: "Salidas" },
-                { val: average, set: setAverage, ph: "Promedio" },
-                { val: unitPrice, set: setUnitPrice, ph: "Precio Unitario" },
-                { val: warehouse, set: setWarehouse, ph: "Bodega" },
-                {
-                  val: reorderPoint,
-                  set: setReorderPoint,
-                  ph: "Punto Reorden",
-                },
-              ].map((f, i) => (
-                <div key={i} className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1.5">
-                    {f.ph}
-                  </label>
-                  <input
-                    className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                    placeholder={f.ph}
-                    value={f.val}
-                    onChange={(e) => f.set(e.target.value)}
-                  />
-                </div>
-              ))}
+
+              {/* normales */}
+              <Input label="Nombre" value={name} set={setName} />
+              <Input label="Código" value={code} set={setCode} />
+
+              {/* 🔹 SELECT UNITS */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Unidad
+                </label>
+                <select
+                  value={unitId}
+                  onChange={(e) => setUnitId(e.target.value)}
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
+                >
+                  <option value="">Seleccionar</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 🔹 SELECT BRANCHES */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Sucursal
+                </label>
+                <select
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
+                >
+                  <option value="">Seleccionar</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* resto */}
+              <Input label="Stock" value={stock} set={setStock} />
+              <Input label="Anterior" value={previous} set={setPrevious} />
+              <Input label="Entradas" value={entries} set={setEntries} />
+              <Input label="Salidas" value={exits} set={setExits} />
+              <Input label="Promedio" value={average} set={setAverage} />
+              <Input label="Precio Unitario" value={unitPrice} set={setUnitPrice} />
+              <Input label="Bodega" value={warehouse} set={setWarehouse} />
+              <Input label="Punto Reorden" value={reorderPoint} set={setReorderPoint} />
+
             </div>
 
             <div className="flex gap-3 pt-6 border-t border-gray-200">
@@ -210,30 +271,15 @@ export default function MaterialsPage() {
             </thead>
             <tbody>
               {materials.map((m) => (
-                <tr
-                  key={m.id}
-                  className="border-b border-gray-100 hover:bg-gray-50 transition"
-                >
+                <tr key={m.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-2">{m.name}</td>
                   <td className="py-2">{m.code}</td>
-                  <td className="py-2">{m.unit}</td>
+                  <td className="py-2">{m.unit?.name}</td>
                   <td className="py-2 font-medium">{m.stock}</td>
                   <td className="py-2">{m.warehouse}</td>
-
                   <td className="py-2 flex gap-2">
-                    <button
-                      onClick={() => startEdit(m)}
-                      className="text-indigo-600 hover:underline"
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      onClick={() => deleteMaterial(m.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Eliminar
-                    </button>
+                    <button onClick={() => startEdit(m)} className="text-indigo-600">Editar</button>
+                    <button onClick={() => deleteMaterial(m.id)} className="text-red-600">Eliminar</button>
                   </td>
                 </tr>
               ))}
@@ -241,6 +287,23 @@ export default function MaterialsPage() {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+// 🔹 helper reutilizable
+function Input({ label, value, set }: any) {
+  return (
+    <div className="flex flex-col">
+      <label className="text-sm font-medium text-gray-700 mb-1.5">
+        {label}
+      </label>
+      <input
+        className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+        placeholder={label} // 🔥 ESTA ES LA CLAVE
+        value={value}
+        onChange={(e) => set(e.target.value)}
+      />
     </div>
   );
 }

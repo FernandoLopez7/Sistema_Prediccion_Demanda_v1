@@ -13,6 +13,17 @@ enum Role {
   VIEWER
 }
 
+model Unit {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  products  Product[]
+  materials Material[]
+
+  @@map("units")
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -21,6 +32,7 @@ model User {
   role      Role     @default(VIEWER) // 👈 NUEVO
   createdAt DateTime @default(now()) @map("created_at")
 
+  Branches       Branch[]
   stockMovements StockMovement[]
   materials      Material[]
   products       Product[]
@@ -29,16 +41,33 @@ model User {
   @@map("users")
 }
 
+model Branch {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User       @relation(fields: [userId], references: [id])
+  products  Product[]
+  materials Material[]
+  sales     Sale[]
+
+  @@map("branches")
+}
+
 model Product {
   id             String          @id @default(cuid())
   userId         String          @map("user_id")
   name           String
   code           String?
-  unit           String
+  unitId         String          @map("unit_id")
   stock          Float           @default(0) // 👈 NUEVO
   safetyStock    Float           @default(0) @map("safety_stock")
   active         Boolean         @default(true)
   createdAt      DateTime        @default(now()) @map("created_at")
+  branchId       String          @map("Sucursal")
+  unit           Unit            @relation(fields: [unitId], references: [id])
+  branch         Branch          @relation(fields: [branchId], references: [id])
   user           User            @relation(fields: [userId], references: [id])
   recipes        Recipe[]
   sales          Sale[]
@@ -52,7 +81,7 @@ model Material {
   userId       String   @map("user_id")
   name         String   @map("producto")
   code         String?  @map("codificacion")
-  unit         String   @map("unidad")
+  unitId       String   @map("unit_id")
   stock        Float    @default(0) @map("actual")
   previous     Float?   @map("anterior")
   entries      Float?   @map("entradas")
@@ -61,6 +90,9 @@ model Material {
   unitPrice    Float?   @map("precio_unitario")
   warehouse    String?  @map("bodega_insumos")
   reorderPoint Float?   @map("reorder_point")
+  branchId     String   @map("Sucursal")
+  unit         Unit     @relation(fields: [unitId], references: [id])
+  branch       Branch   @relation(fields: [branchId], references: [id])
   createdAt    DateTime @default(now()) @map("created_at")
   user         User     @relation(fields: [userId], references: [id])
   recipes      Recipe[]
@@ -87,6 +119,8 @@ model Sale {
   quantity    Float
   saleDate    DateTime @map("sale_date")
   xmlFilename String?  @map("xml_filename")
+  branchId    String   @map("Sucursal")
+  branch      Branch   @relation(fields: [branchId], references: [id])
   createdAt   DateTime @default(now()) @map("created_at")
   product     Product  @relation(fields: [productId], references: [id])
   user        User     @relation(fields: [userId], references: [id])
@@ -101,14 +135,14 @@ enum MovementType {
 }
 
 model StockMovement {
-  id        String       @id @default(cuid())
-  productId String       @map("product_id")
-  userId    String       @map("user_id")
-  quantity  Float?
-  type      MovementType // "IN" | "OUT" | "ADJUSTMENT"
+  id            String       @id @default(cuid())
+  productId     String       @map("product_id")
+  userId        String       @map("user_id")
+  quantity      Float?
+  type          MovementType // "IN" | "OUT" | "ADJUSTMENT"
   previousStock Float?
   newStock      Float?
-  createdAt DateTime     @default(now()) @map("created_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
 
   product Product @relation(fields: [productId], references: [id])
   user    User    @relation(fields: [userId], references: [id])

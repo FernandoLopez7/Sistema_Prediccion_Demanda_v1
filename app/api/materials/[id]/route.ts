@@ -1,17 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 
-function getId(req: Request) {
-  return new URL(req.url).pathname.split('/').pop()
-}
-
-export async function PUT(req: Request) {
+export async function PUT(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = getId(req)
+    const { id } = await context.params
     const body = await req.json()
-
-    console.log("PUT id:", id)
-    console.log("PUT body:", body)
 
     if (!id) {
       return NextResponse.json(
@@ -20,28 +16,53 @@ export async function PUT(req: Request) {
       )
     }
 
+    const {
+      name,
+      code,
+      unitId,
+      branchId,
+      stock,
+      previous,
+      entries,
+      exits,
+      average,
+      unitPrice,
+      warehouse,
+      reorderPoint
+    } = body
+
+    if (!name || !unitId || !branchId) {
+      return NextResponse.json(
+        { error: 'Nombre, unidad y sucursal requeridos' },
+        { status: 400 }
+      )
+    }
+
     const material = await prisma.material.update({
       where: { id },
       data: {
-        name: body.name,
-        code: body.code || null,
-        unit: body.unit,
-        stock: Number(body.stock) || 0,
+        name,
+        code: code || null,
+        unitId,
+        branchId,
+        stock: Number(stock) || 0,
 
-        previous: body.previous ? Number(body.previous) : null,
-        entries: body.entries ? Number(body.entries) : null,
-        exits: body.exits ? Number(body.exits) : null,
-        average: body.average ? Number(body.average) : null,
-        unitPrice: body.unitPrice ? Number(body.unitPrice) : null,
-        warehouse: body.warehouse || null,
-
-        reorderPoint: body.reorderPoint
-          ? Number(body.reorderPoint)
-          : null
+        previous: previous ? Number(previous) : null,
+        entries: entries ? Number(entries) : null,
+        exits: exits ? Number(exits) : null,
+        average: average ? Number(average) : null,
+        unitPrice: unitPrice ? Number(unitPrice) : null,
+        warehouse: warehouse || null,
+        reorderPoint: reorderPoint ? Number(reorderPoint) : null
+      },
+      include: {
+        unit: { select: { name: true } },
+        branch: { select: { name: true } }
       }
     })
 
     return NextResponse.json(material)
+
   } catch (error) {
     console.error("PUT /materials error:", error)
 
@@ -52,11 +73,12 @@ export async function PUT(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = getId(req)
-
-    console.log("DELETE id:", id)
+    const { id } = await context.params
 
     if (!id) {
       return NextResponse.json(
@@ -70,6 +92,7 @@ export async function DELETE(req: Request) {
     })
 
     return NextResponse.json({ ok: true })
+
   } catch (error) {
     console.error("DELETE /materials error:", error)
 

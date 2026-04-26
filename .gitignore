@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# Seeds locales
+prisma/*.local.json
+prisma/seed.js

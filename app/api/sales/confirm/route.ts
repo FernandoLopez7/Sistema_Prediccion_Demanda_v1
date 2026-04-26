@@ -7,11 +7,12 @@ type ConfirmItem = {
   matchedProductId: string | null;
   quantity: number;
   xmlFilename?: string;
+  branchId: string; // 👈 NUEVO
 };
 
 export async function POST(req: Request) {
   try {
-    const items: ConfirmItem[] = await req.json(); // ✅ SOLO UNA VEZ
+    const items: ConfirmItem[] = await req.json();
 
     if (!Array.isArray(items)) {
       return NextResponse.json(
@@ -20,28 +21,85 @@ export async function POST(req: Request) {
       );
     }
 
-    const sales = await Promise.all(
-      items.map((item) => {
-        if (!item.matchedProductId) return null;
+    const result = await prisma.$transaction(async (tx) => {
+      let count = 0;
 
-        return prisma.sale.create({
+      for (const item of items) {
+        if (!item.matchedProductId) continue;
+
+        if (!item.branchId) {
+          throw new Error("branchId requerido");
+        }
+
+        const product = await tx.product.findFirst({
+          where: {
+            id: item.matchedProductId,
+            userId,
+          },
+        });
+
+        if (!product) {
+          throw new Error("Producto no encontrado");
+        }
+
+        const qty = Number(item.quantity);
+
+        if (qty <= 0) {
+          throw new Error("Cantidad inválida");
+        }
+
+        // 🔴 VALIDAR STOCK
+        if (product.stock < qty) {
+          throw new Error(
+            `Stock insuficiente para ${product.name}. Disponible: ${product.stock}`
+          );
+        }
+
+        const newStock = product.stock - qty;
+
+        // ✅ actualizar stock
+        await tx.product.update({
+          where: { id: product.id },
+          data: { stock: newStock },
+        });
+
+        // ✅ crear venta
+        await tx.sale.create({
           data: {
             userId,
-            productId: item.matchedProductId,
-            quantity: Number(item.quantity),
+            branchId: item.branchId, // 👈 FIX
+            productId: product.id,
+            quantity: qty,
             saleDate: new Date(),
             xmlFilename: item.xmlFilename || null,
           },
         });
-      })
-    );
 
-    return NextResponse.json({ ok: true, count: sales.length });
-  } catch (error) {
-    console.error("CONFIRM ERROR:", error); // 🔥 esto sí sirve
+        // (opcional recomendado)
+        await tx.stockMovement.create({
+          data: {
+            productId: product.id,
+            userId,
+            quantity: qty,
+            type: "OUT",
+            previousStock: product.stock,
+            newStock,
+          },
+        });
+
+        count++;
+      }
+
+      return { count };
+    });
+
+    return NextResponse.json({ ok: true, count: result.count });
+
+  } catch (error: any) {
+    console.error("CONFIRM ERROR:", error);
 
     return NextResponse.json(
-      { error: "Error al guardar ventas" },
+      { error: error.message || "Error al guardar ventas" },
       { status: 500 }
     );
   }

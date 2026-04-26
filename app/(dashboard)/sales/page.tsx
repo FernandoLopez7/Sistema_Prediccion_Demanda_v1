@@ -8,6 +8,7 @@ type Sale = {
   quantity: number;
   saleDate: string;
   product: { name: string };
+  branch: { name: string };
 };
 
 type PreviewItem = {
@@ -20,30 +21,42 @@ type PreviewItem = {
 type Product = {
   id: string;
   name: string;
+  stock: number;
+  branchId: string;
+};
+
+type Branch = {
+  id: string;
+  name: string;
 };
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [preview, setPreview] = useState<PreviewItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [saleDate, setSaleDate] = useState(
     new Date().toISOString().split("T")[0],
   );
 
   const fetchAll = async () => {
-    const [s, p] = await Promise.all([
+    const [s, p, b] = await Promise.all([
       fetch("/api/sales"),
       fetch("/api/products"),
+      fetch("/api/branches"),
     ]);
 
     const salesData: Sale[] = await s.json();
     const productsData: Product[] = await p.json();
+    const branchesData: Branch[] = await b.json();
 
     setSales(salesData);
     setProducts(productsData);
+    setBranches(branchesData);
   };
 
   useEffect(() => {
@@ -77,7 +90,7 @@ export default function SalesPage() {
     updated[index] = {
       ...updated[index],
       matchedProductId: productId,
-      matched: true,
+      matched: !!productId,
     };
 
     setPreview(updated);
@@ -87,13 +100,49 @@ export default function SalesPage() {
   const confirmSales = async () => {
     const validItems = preview.filter((p) => p.matchedProductId !== null);
 
-    await fetch("/api/sales/confirm", {
+    if (validItems.length === 0) {
+      alert("No hay ventas válidas para confirmar");
+      return;
+    }
+
+    for (const item of validItems) {
+      const product = products.find((p) => p.id === item.matchedProductId);
+
+      if (!product) {
+        alert(`Producto no encontrado para: ${item.productName}`);
+        return;
+      }
+
+      if (Number(item.quantity) > product.stock) {
+        alert(
+          `Stock insuficiente para ${product.name}. Disponible: ${product.stock}`,
+        );
+        return;
+      }
+    }
+
+    const payload = validItems.map((item) => {
+      const product = products.find((p) => p.id === item.matchedProductId);
+
+      return {
+        ...item,
+        branchId: product?.branchId ?? "",
+      };
+    });
+
+    const res = await fetch("/api/sales/confirm", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(validItems),
+      body: JSON.stringify(payload),
     });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || "Error al confirmar ventas");
+      return;
+    }
 
     setPreview([]);
     fetchAll();
@@ -107,20 +156,46 @@ export default function SalesPage() {
 
   // ✅ CREAR VENTA MANUAL
   const saveManualSale = async () => {
-    if (!selectedProductId || !quantity) {
+    if (!selectedProductId || !selectedBranchId || !quantity) {
       alert("Por favor completa todos los campos");
       return;
     }
 
-    await fetch("/api/sales", {
+    const product = products.find((p) => p.id === selectedProductId);
+
+    if (!product) {
+      alert("Producto no encontrado");
+      return;
+    }
+
+    const qty = Number(quantity);
+
+    if (!Number.isFinite(qty) || qty <= 0) {
+      alert("La cantidad debe ser mayor a 0");
+      return;
+    }
+
+    if (qty > product.stock) {
+      alert(`Stock insuficiente. Disponible: ${product.stock}`);
+      return;
+    }
+
+    const res = await fetch("/api/sales", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         productId: selectedProductId,
-        quantity: parseInt(quantity),
+        branchId: selectedBranchId,
+        quantity: qty,
         saleDate,
       }),
     });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || "Error al crear venta");
+      return;
+    }
 
     resetManualForm();
     fetchAll();
@@ -128,6 +203,7 @@ export default function SalesPage() {
 
   const resetManualForm = () => {
     setSelectedProductId("");
+    setSelectedBranchId("");
     setQuantity("");
     setSaleDate(new Date().toISOString().split("T")[0]);
     setIsModalOpen(false);
@@ -168,6 +244,24 @@ export default function SalesPage() {
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 mb-1.5">
+              Sucursal
+            </label>
+            <select
+              value={selectedBranchId}
+              onChange={(e) => setSelectedBranchId(e.target.value)}
+              className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">Seleccionar sucursal</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
                 </option>
               ))}
             </select>
@@ -300,6 +394,9 @@ export default function SalesPage() {
                   Producto
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  Sucursal
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                   Cantidad
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
@@ -315,6 +412,9 @@ export default function SalesPage() {
                 <tr key={s.id} className="hover:bg-gray-50 transition">
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {s.product.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {s.branch?.name}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {s.quantity}

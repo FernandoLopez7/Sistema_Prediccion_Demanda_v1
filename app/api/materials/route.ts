@@ -7,7 +7,15 @@ export async function GET() {
   try {
     const materials = await prisma.material.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        unit: {
+          select: { name: true }
+        },
+        branch: {
+          select: { name: true }
+        }
+      }
     })
 
     return NextResponse.json(materials)
@@ -24,11 +32,25 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    console.log("POST body:", body)
 
-    if (!body.name || !body.unit) {
+    const {
+      name,
+      code,
+      unitId,
+      branchId,
+      stock,
+      previous,
+      entries,
+      exits,
+      average,
+      unitPrice,
+      warehouse,
+      reorderPoint
+    } = body
+
+    if (!name || !unitId || !branchId) {
       return NextResponse.json(
-        { error: 'Nombre y unidad requeridos' },
+        { error: 'Nombre, unidad y sucursal requeridos' },
         { status: 400 }
       )
     }
@@ -36,22 +58,19 @@ export async function POST(req: Request) {
     const material = await prisma.material.create({
       data: {
         userId,
-        name: body.name,
-        code: body.code || null,
-        unit: body.unit,
-        stock: Number(body.stock) || 0,
+        name,
+        code: code || null,
+        unitId,
+        branchId,
+        stock: Number(stock) || 0,
 
-        // nuevos campos
-        previous: body.previous ? Number(body.previous) : null,
-        entries: body.entries ? Number(body.entries) : null,
-        exits: body.exits ? Number(body.exits) : null,
-        average: body.average ? Number(body.average) : null,
-        unitPrice: body.unitPrice ? Number(body.unitPrice) : null,
-        warehouse: body.warehouse || null,
-
-        reorderPoint: body.reorderPoint
-          ? Number(body.reorderPoint)
-          : null
+        previous: previous ? Number(previous) : null,
+        entries: entries ? Number(entries) : null,
+        exits: exits ? Number(exits) : null,
+        average: average ? Number(average) : null,
+        unitPrice: unitPrice ? Number(unitPrice) : null,
+        warehouse: warehouse || null,
+        reorderPoint: reorderPoint ? Number(reorderPoint) : null
       }
     })
 

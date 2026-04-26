@@ -16,22 +16,29 @@ export async function GET() {
       include: {
         recipes: {
           include: {
-            material: true // 🔥 importante para mostrar nombre
+            material: true // 🔥 nombre del material
           }
+        },
+        unit: {
+          select: { name: true } // 🔥 nombre unidad
+        },
+        branch: {
+          select: { name: true } // 🔥 nombre sucursal
         }
       }
     })
 
     return NextResponse.json(products)
+
   } catch (error) {
     console.error("GET /products error:", error)
+
     return NextResponse.json(
       { error: 'Error al obtener productos' },
       { status: 500 }
     )
   }
 }
-
 
 export async function POST(req: Request) {
   try {
@@ -40,22 +47,25 @@ export async function POST(req: Request) {
     const {
       name,
       code,
-      unit,
+      unitId,     // 🔥 cambio
+      branchId,   // 🔥 nuevo
       safetyStock,
-      stock, // 👈 NUEVO
+      stock,
       recipes
     }: {
       name: string
       code?: string
-      unit: string
+      unitId: string
+      branchId: string
       safetyStock?: number
-      stock?: number // 👈 NUEVO
+      stock?: number
       recipes: RecipeInput[]
     } = body
 
-    if (!name || !unit) {
+    // 🔴 validación mínima correcta
+    if (!name || !unitId || !branchId) {
       return NextResponse.json(
-        { error: 'Nombre y unidad requeridos' },
+        { error: 'Nombre, unidad y sucursal requeridos' },
         { status: 400 }
       )
     }
@@ -68,13 +78,15 @@ export async function POST(req: Request) {
     }
 
     const product = await prisma.$transaction(async (tx) => {
+
       const newProduct = await tx.product.create({
         data: {
           userId,
           name,
           code: code || null,
-          unit,
-          stock: Number(stock) || 0, // 👈 NUEVO
+          unitId,     // 🔥 FIX
+          branchId,   // 🔥 FIX
+          stock: Number(stock) || 0,
           safetyStock: Number(safetyStock) || 0
         }
       })
@@ -103,6 +115,7 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("POST /products error:", error)
+
     return NextResponse.json(
       { error: 'Error al crear producto' },
       { status: 500 }

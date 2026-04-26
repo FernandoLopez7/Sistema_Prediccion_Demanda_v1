@@ -18,16 +18,18 @@ export async function PUT(req: Request) {
     const {
       name,
       code,
-      unit,
+      unitId,     // 🔥 cambio
+      branchId,   // 🔥 nuevo
       safetyStock,
-      stock, // 👈 NUEVO
+      stock,
       recipes,
     }: {
       name: string;
       code?: string;
-      unit: string;
+      unitId: string;
+      branchId: string;
       safetyStock?: number;
-      stock?: number; // 👈 NUEVO
+      stock?: number;
       recipes: RecipeInput[];
     } = body;
 
@@ -35,9 +37,9 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "ID requerido" }, { status: 400 });
     }
 
-    if (!name || !unit) {
+    if (!name || !unitId || !branchId) {
       return NextResponse.json(
-        { error: "Nombre y unidad requeridos" },
+        { error: "Nombre, unidad y sucursal requeridos" },
         { status: 400 },
       );
     }
@@ -50,14 +52,16 @@ export async function PUT(req: Request) {
     }
 
     const updatedProduct = await prisma.$transaction(async (tx) => {
+
       // 1. actualizar producto
       const product = await tx.product.update({
         where: { id },
         data: {
           name,
           code: code || null,
-          unit,
-          ...(stock !== undefined && { stock: Number(stock) }), // 👈 NUEVO
+          unitId,     // 🔥 FIX
+          branchId,   // 🔥 FIX
+          ...(stock !== undefined && { stock: Number(stock) }),
           safetyStock: Number(safetyStock) || 0,
         },
       });
@@ -89,8 +93,10 @@ export async function PUT(req: Request) {
     });
 
     return NextResponse.json(updatedProduct);
+
   } catch (error) {
     console.error("PUT /products error:", error);
+
     return NextResponse.json(
       { error: "Error al actualizar producto" },
       { status: 500 },
@@ -107,6 +113,7 @@ export async function DELETE(req: Request) {
     }
 
     await prisma.$transaction(async (tx) => {
+
       // 1. eliminar recetas relacionadas
       await tx.recipe.deleteMany({
         where: { productId: id },
@@ -116,11 +123,14 @@ export async function DELETE(req: Request) {
       await tx.product.delete({
         where: { id },
       });
+
     });
 
     return NextResponse.json({ ok: true });
+
   } catch (error) {
     console.error("DELETE /products error:", error);
+
     return NextResponse.json(
       { error: "Error al eliminar producto" },
       { status: 500 },
