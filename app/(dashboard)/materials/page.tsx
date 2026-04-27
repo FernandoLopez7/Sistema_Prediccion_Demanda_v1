@@ -12,13 +12,14 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import Modal from "../../../components/Modal";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 type Material = {
   id: string;
+  userId: string;
   name: string;
   code: string | null;
-  unit: string;
+  unitId: string;
   stock: number;
   previous: number | null;
   entries: number | null;
@@ -27,15 +28,26 @@ type Material = {
   unitPrice: number | null;
   warehouse: string | null;
   reorderPoint: number | null;
+  branchId: string;
+  createdAt: string;
+  unit: {
+    name: string;
+  };
+  branch: {
+    name: string;
+  };
 };
 
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [units, setUnits] = useState<{ id: string; name: string }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
-  const [unit, setUnit] = useState("");
+  const [unitId, setUnitId] = useState("");
+  const [branchId, setBranchId] = useState("");
   const [stock, setStock] = useState("");
   const [previous, setPrevious] = useState("");
   const [entries, setEntries] = useState("");
@@ -46,6 +58,14 @@ export default function MaterialsPage() {
   const [reorderPoint, setReorderPoint] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const [isReplenishModalOpen, setIsReplenishModalOpen] = useState(false);
+  const [replenishMaterialId, setReplenishMaterialId] = useState<string | null>(
+    null,
+  );
+  const [replenishQuantity, setReplenishQuantity] = useState("");
+  const [replenishBranchId, setReplenishBranchId] = useState("");
+  const [replenishDate, setReplenishDate] = useState("");
 
   // Estados para búsqueda, ordenamiento y paginación con TanStack Table
   const [globalFilter, setGlobalFilter] = useState("");
@@ -63,7 +83,7 @@ export default function MaterialsPage() {
       header: () => <span>Código</span>,
       cell: (info) => info.getValue() ?? "-",
     }),
-    columnHelper.accessor("unit", {
+    columnHelper.accessor("unit.name", {
       header: () => <span>Unidad</span>,
       cell: (info) => info.getValue(),
     }),
@@ -73,15 +93,15 @@ export default function MaterialsPage() {
         <span className="font-medium text-gray-900">{info.getValue()}</span>
       ),
     }),
-    columnHelper.accessor("warehouse", {
-      header: () => <span>Bodega</span>,
-      cell: (info) => info.getValue() ?? "-",
+    columnHelper.accessor("branch.name", {
+      header: () => <span>Sucursal</span>,
+      cell: (info) => info.getValue(),
     }),
     columnHelper.display({
       id: "acciones",
       header: () => <span>Acciones</span>,
       cell: ({ row }) => (
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           <button
             onClick={() => startEdit(row.original)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200"
@@ -89,6 +109,15 @@ export default function MaterialsPage() {
           >
             <PencilIcon className="w-4 h-4" />
             Editar
+          </button>
+
+          <button
+            onClick={() => openReplenishModal(row.original)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 hover:border-green-300 transition-colors duration-200"
+            title="Reabastecer material"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Reabastecer
           </button>
 
           <button
@@ -119,9 +148,17 @@ export default function MaterialsPage() {
     getPaginationRowModel: getPaginationRowModel(),
     globalFilterFn: (row, _columnId, filterValue) => {
       const value = String(filterValue).toLowerCase();
+      const unit = row.getValue("unit") as { name: string } | null;
+      const branch = row.getValue("branch") as { name: string } | null;
       return (
         String(row.getValue("name")).toLowerCase().includes(value) ||
         String(row.getValue("code") ?? "")
+          .toLowerCase()
+          .includes(value) ||
+        String(unit?.name ?? "")
+          .toLowerCase()
+          .includes(value) ||
+        String(branch?.name ?? "")
           .toLowerCase()
           .includes(value)
       );
@@ -146,9 +183,45 @@ export default function MaterialsPage() {
     setMaterials(data);
   };
 
+  const fetchUnits = async () => {
+    try {
+      const res = await fetch("/api/units");
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("GET /api/units failed", data);
+        setUnits([]);
+        return;
+      }
+
+      setUnits(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching units:", error);
+      setUnits([]);
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch("/api/branches");
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("GET /api/branches failed", data);
+        setBranches([]);
+        return;
+      }
+
+      setBranches(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+      setBranches([]);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
-      await fetchMaterials();
+      await Promise.all([fetchMaterials(), fetchUnits(), fetchBranches()]);
     };
     load();
   }, []);
@@ -167,7 +240,8 @@ export default function MaterialsPage() {
       body: JSON.stringify({
         name,
         code,
-        unit,
+        unitId,
+        branchId,
         stock,
         previous,
         entries,
@@ -189,11 +263,40 @@ export default function MaterialsPage() {
     fetchMaterials();
   };
 
+  const openReplenishModal = (material: Material) => {
+    setReplenishMaterialId(material.id);
+    setReplenishQuantity("");
+    setReplenishBranchId(material.branchId || "");
+    setReplenishDate("");
+    setIsReplenishModalOpen(true);
+  };
+
+  const saveReplenishMaterial = async () => {
+    if (!replenishMaterialId || !replenishBranchId || !replenishQuantity) {
+      return;
+    }
+
+    await fetch("/api/materials/add-stock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        materialId: replenishMaterialId,
+        quantity: Number(replenishQuantity),
+        branchId: replenishBranchId,
+        movementDate: replenishDate || undefined,
+      }),
+    });
+
+    setIsReplenishModalOpen(false);
+    fetchMaterials();
+  };
+
   const startEdit = (m: Material) => {
     setEditingId(m.id);
     setName(m.name);
     setCode(m.code || "");
-    setUnit(m.unit);
+    setUnitId(m.unitId);
+    setBranchId(m.branchId);
     setStock(m.stock.toString());
     setPrevious(m.previous?.toString() || "");
     setEntries(m.entries?.toString() || "");
@@ -209,7 +312,8 @@ export default function MaterialsPage() {
     setEditingId(null);
     setName("");
     setCode("");
-    setUnit("");
+    setUnitId("");
+    setBranchId("");
     setStock("");
     setPrevious("");
     setEntries("");
@@ -248,35 +352,190 @@ export default function MaterialsPage() {
         >
           <div className="space-y-5">
             <div className="grid grid-cols-3 gap-4">
-              {[
-                { val: name, set: setName, ph: "Nombre" },
-                { val: code, set: setCode, ph: "Código" },
-                { val: unit, set: setUnit, ph: "Unidad" },
-                { val: stock, set: setStock, ph: "Stock" },
-                { val: previous, set: setPrevious, ph: "Anterior" },
-                { val: entries, set: setEntries, ph: "Entradas" },
-                { val: exits, set: setExits, ph: "Salidas" },
-                { val: average, set: setAverage, ph: "Promedio" },
-                { val: unitPrice, set: setUnitPrice, ph: "Precio Unitario" },
-                { val: warehouse, set: setWarehouse, ph: "Bodega" },
-                {
-                  val: reorderPoint,
-                  set: setReorderPoint,
-                  ph: "Punto Reorden",
-                },
-              ].map((f, i) => (
-                <div key={i} className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1.5">
-                    {f.ph}
-                  </label>
-                  <input
-                    className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                    placeholder={f.ph}
-                    value={f.val}
-                    onChange={(e) => f.set(e.target.value)}
-                  />
-                </div>
-              ))}
+              {/* Nombre */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Nombre
+                </label>
+                <input
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Nombre"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              {/* Código */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Código
+                </label>
+                <input
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Código"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                />
+              </div>
+
+              {/* Unidad */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Unidad
+                </label>
+                <select
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  value={unitId}
+                  onChange={(e) => setUnitId(e.target.value)}
+                >
+                  <option value="">Seleccionar unidad</option>
+                  {Array.isArray(units)
+                    ? units.map((unit) => (
+                        <option key={unit.id} value={unit.id}>
+                          {unit.name}
+                        </option>
+                      ))
+                    : null}
+                </select>
+              </div>
+
+              {/* Sucursal */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Sucursal
+                </label>
+                <select
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                >
+                  <option value="">Seleccionar sucursal</option>
+                  {Array.isArray(branches)
+                    ? branches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </option>
+                      ))
+                    : null}
+                </select>
+              </div>
+
+              {/* Stock */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Stock
+                </label>
+                <input
+                  type="number"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Stock"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                />
+              </div>
+
+              {/* Anterior */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Anterior
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Anterior"
+                  value={previous}
+                  onChange={(e) => setPrevious(e.target.value)}
+                />
+              </div>
+
+              {/* Entradas */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Entradas
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Entradas"
+                  value={entries}
+                  onChange={(e) => setEntries(e.target.value)}
+                />
+              </div>
+
+              {/* Salidas */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Salidas
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Salidas"
+                  value={exits}
+                  onChange={(e) => setExits(e.target.value)}
+                />
+              </div>
+
+              {/* Promedio */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Promedio
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Promedio"
+                  value={average}
+                  onChange={(e) => setAverage(e.target.value)}
+                />
+              </div>
+
+              {/* Precio Unitario */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Precio Unitario
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Precio Unitario"
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                />
+              </div>
+
+              {/* Bodega */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Bodega
+                </label>
+                <input
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Bodega"
+                  value={warehouse}
+                  onChange={(e) => setWarehouse(e.target.value)}
+                />
+              </div>
+
+              {/* Punto Reorden */}
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Punto Reorden
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="Punto Reorden"
+                  value={reorderPoint}
+                  onChange={(e) => setReorderPoint(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 pt-6 border-t border-gray-200">
@@ -288,6 +547,88 @@ export default function MaterialsPage() {
               </button>
               <button
                 onClick={resetForm}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={isReplenishModalOpen}
+          title="Reabastecer Material"
+          onClose={() => setIsReplenishModalOpen(false)}
+        >
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Sucursal
+                </label>
+                <select
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
+                  value={replenishBranchId}
+                  onChange={(e) => setReplenishBranchId(e.target.value)}
+                >
+                  <option value="">Seleccionar sucursal</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Fecha de movimiento
+                </label>
+                <input
+                  type="date"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
+                  value={replenishDate}
+                  onChange={(e) => setReplenishDate(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col sm:col-span-2">
+                <label className="text-sm font-medium text-gray-700 mb-1.5 ">
+                  Material
+                </label>
+                <input
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-900"
+                  value={
+                    materials.find((m) => m.id === replenishMaterialId)?.name ||
+                    ""
+                  }
+                  readOnly
+                />
+              </div>
+
+              <div className="flex flex-col sm:col-span-2">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Cantidad a agregar
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
+                  value={replenishQuantity}
+                  onChange={(e) => setReplenishQuantity(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-6 border-t border-gray-200">
+              <button
+                onClick={saveReplenishMaterial}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg font-medium transition"
+              >
+                Reabastecer
+              </button>
+              <button
+                onClick={() => setIsReplenishModalOpen(false)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition"
               >
                 Cancelar
@@ -341,7 +682,7 @@ export default function MaterialsPage() {
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="inline-flex items-center gap-1 text-left"
+                          className="inline-flex items-center bg-transparent gap-1 text-left text-gray-700 hover:text-gray-900"
                         >
                           {flexRender(
                             header.column.columnDef.header,

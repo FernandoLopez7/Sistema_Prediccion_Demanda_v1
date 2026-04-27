@@ -16,11 +16,30 @@ type RecipeItem = {
 
 type Product = {
   id: string;
+  userId: string;
   name: string;
   code: string | null;
-  unit: string;
+  unitId: string;
+  stock: number;
   safetyStock: number;
-  stock: number; // 👈 agregar
+  active: boolean;
+  createdAt: string;
+  branchId: string;
+  unit: {
+    name: string;
+  };
+  branch: {
+    name: string;
+  };
+  recipes: {
+    materialId: string;
+    quantity: number;
+    material: {
+      id: string;
+      name: string;
+      code: string | null;
+    };
+  }[];
 };
 
 type ProductWithRecipes = Product & {
@@ -30,11 +49,14 @@ type ProductWithRecipes = Product & {
 export default function ProductsPage() {
   const [products, setProducts] = useState<ProductWithRecipes[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [units, setUnits] = useState<{ id: string; name: string }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
-  const [unit, setUnit] = useState("");
+  const [unitId, setUnitId] = useState("");
+  const [branchId, setBranchId] = useState("");
   const [safetyStock, setSafetyStock] = useState("");
   const [stock, setStock] = useState("");
 
@@ -61,10 +83,26 @@ export default function ProductsPage() {
     setMaterials(data);
   };
 
+  const fetchUnits = async () => {
+    const res = await fetch("/api/units");
+    const data = await res.json();
+    setUnits(data);
+  };
+
+  const fetchBranches = async () => {
+    const res = await fetch("/api/branches");
+    const data = await res.json();
+    setBranches(data);
+  };
+
   useEffect(() => {
     const load = async () => {
-      await fetchProducts();
-      await fetchMaterials();
+      await Promise.all([
+        fetchProducts(),
+        fetchMaterials(),
+        fetchUnits(),
+        fetchBranches(),
+      ]);
     };
     load();
   }, []);
@@ -99,9 +137,10 @@ export default function ProductsPage() {
       body: JSON.stringify({
         name,
         code,
-        unit,
+        unitId,
+        branchId,
         safetyStock,
-        stock, // 👈
+        stock,
         recipes,
       }),
     });
@@ -114,9 +153,10 @@ export default function ProductsPage() {
     setEditingId(p.id);
     setName(p.name);
     setCode(p.code || "");
-    setUnit(p.unit);
+    setUnitId(p.unitId);
+    setBranchId(p.branchId);
     setSafetyStock(p.safetyStock.toString());
-    setStock(p.stock?.toString() ?? "0"); // 👈 FALTABA
+    setStock(p.stock?.toString() ?? "0");
 
     // 🔥 cargar recetas existentes
     if (p.recipes) {
@@ -143,9 +183,10 @@ export default function ProductsPage() {
     setEditingId(null);
     setName("");
     setCode("");
-    setUnit("");
+    setUnitId("");
+    setBranchId("");
     setSafetyStock("");
-    setStock(""); // 👈 FALTABA
+    setStock("");
     setRecipes([]);
     setIsModalOpen(false);
   };
@@ -186,17 +227,19 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Productos</h1>
-          <button
-            onClick={() => {
-              resetForm();
-              setIsModalOpen(true);
-            }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium"
-          >
-            + Agregar Producto
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => {
+                resetForm();
+                setIsModalOpen(true);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium"
+            >
+              + Agregar Producto
+            </button>
+          </div>
         </div>
 
         {/* MODAL */}
@@ -233,12 +276,35 @@ export default function ProductsPage() {
                 <label className="text-sm font-medium text-gray-700 mb-1.5">
                   Unidad
                 </label>
-                <input
-                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                  placeholder="Unidad de medida"
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                />
+                <select
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  value={unitId}
+                  onChange={(e) => setUnitId(e.target.value)}
+                >
+                  <option value="">Seleccionar unidad</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Sucursal
+                </label>
+                <select
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                >
+                  <option value="">Seleccionar sucursal</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1.5">
@@ -259,7 +325,7 @@ export default function ProductsPage() {
                   className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                   placeholder="Cantidad actual en stock"
                   value={stock}
-                  onChange={(e) => setSafetyStock(e.target.value)}
+                  onChange={(e) => setStock(e.target.value)}
                 />
               </div>
             </div>
@@ -406,7 +472,7 @@ export default function ProductsPage() {
                 >
                   <td className="py-2">{p.name}</td>
                   <td className="py-2">{p.code}</td>
-                  <td className="py-2">{p.unit}</td>
+                  <td className="py-2">{p.unit.name}</td>
                   <td className="py-2 font-medium">{p.safetyStock}</td>
                   <td className="py-2 font-medium">{p.stock}</td>
 
@@ -447,9 +513,10 @@ export default function ProductsPage() {
                         fetchProducts();
                       }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 hover:border-green-300 transition-colors duration-200"
-                      title="Agregar stock"
+                      title="Reabastecer producto"
                     >
-                      <PlusIcon className="w-4 h-4" />+ Stock
+                      <PlusIcon className="w-4 h-4" />
+                      Reabastecer
                     </button>
                   </td>
                 </tr>

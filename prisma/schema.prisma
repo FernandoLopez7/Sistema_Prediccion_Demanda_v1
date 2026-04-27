@@ -47,10 +47,11 @@ model Branch {
   name      String
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User       @relation(fields: [userId], references: [id])
-  products  Product[]
-  materials Material[]
-  sales     Sale[]
+  user          User           @relation(fields: [userId], references: [id])
+  products      Product[]
+  materials     Material[]
+  sales         Sale[]
+  stockMovements StockMovement[]
 
   @@map("branches")
 }
@@ -96,6 +97,7 @@ model Material {
   createdAt    DateTime @default(now()) @map("created_at")
   user         User     @relation(fields: [userId], references: [id])
   recipes      Recipe[]
+  stockMovements StockMovement[]
 
   @@map("materials")
 }
@@ -136,16 +138,21 @@ enum MovementType {
 
 model StockMovement {
   id            String       @id @default(cuid())
-  productId     String       @map("product_id")
+  productId     String?      @map("product_id")
+  materialId    String?      @map("material_id")
   userId        String       @map("user_id")
+  branchId      String?      @map("branch_id")
   quantity      Float?
   type          MovementType // "IN" | "OUT" | "ADJUSTMENT"
   previousStock Float?
   newStock      Float?
+  movementDate  DateTime     @default(now()) @map("movement_date")
   createdAt     DateTime     @default(now()) @map("created_at")
 
-  product Product @relation(fields: [productId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  product  Product? @relation(fields: [productId], references: [id])
+  material Material? @relation(fields: [materialId], references: [id])
+  branch   Branch?   @relation(fields: [branchId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
 
   @@map("stock_movements")
 }
