@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ClockIcon } from "@heroicons/react/24/outline";
 
 type Material = {
   id: string;
@@ -114,13 +116,24 @@ export default function MaterialReplenishmentsPage() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white p-8 rounded-lg shadow">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Reabastecimiento Masivo de Materiales
-            </h1>
-            <p className="text-gray-600">
-              Agrega múltiples materiales para reabastecer el inventario de
-              forma masiva.
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Reabastecimiento Masivo de Materiales
+                </h1>
+                <p className="text-gray-600">
+                  Agrega múltiples materiales para reabastecer el inventario de
+                  forma masiva.
+                </p>
+              </div>
+              <Link
+                href="/material-replenishment-history"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200"
+              >
+                <ClockIcon className="w-4 h-4" />
+                Historial
+              </Link>
+            </div>
           </div>
 
           <div className="space-y-6">

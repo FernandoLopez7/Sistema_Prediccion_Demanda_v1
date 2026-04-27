@@ -146,6 +146,7 @@ model StockMovement {
   type          MovementType // "IN" | "OUT" | "ADJUSTMENT"
   previousStock Float?
   newStock      Float?
+  notes         String?      // 👈 Campo agregado
   movementDate  DateTime     @default(now()) @map("movement_date")
   createdAt     DateTime     @default(now()) @map("created_at")
 
