@@ -66,6 +66,7 @@ export default function ProductsPage() {
 
   // Estados para búsqueda y paginación
   const [searchTerm, setSearchTerm] = useState("");
+  const [branchFilter, setBranchFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<"name" | "stock" | "code">("name");
   const itemsPerPage = 15;
@@ -195,12 +196,14 @@ export default function ProductsPage() {
   // FILTRADO Y PAGINACIÓN
   // =============================
   const filteredProducts = products
-    .filter(
-      (product) =>
+    .filter((product) => {
+      if (branchFilter && product.branchId !== branchFilter) return false;
+      return (
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (product.code &&
-          product.code.toLowerCase().includes(searchTerm.toLowerCase())),
-    )
+          product.code.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    })
     .sort((a, b) => {
       if (sortBy === "name") {
         return a.name.localeCompare(b.name);
@@ -215,11 +218,6 @@ export default function ProductsPage() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
-
-  // Reset page when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
 
   // =============================
   // UI
@@ -436,14 +434,35 @@ export default function ProductsPage() {
                   type="text"
                   placeholder="Buscar por nombre o código..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
 
               <select
+                value={branchFilter}
+                onChange={(e) => {
+                  setBranchFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Todas las sucursales</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) =>
+                  setSortBy(e.target.value as "name" | "stock" | "code")
+                }
                 className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="name">Ordenar por: Nombre</option>
@@ -459,7 +478,7 @@ export default function ProductsPage() {
                 <th className="py-2">Nombre</th>
                 <th className="py-2">Código</th>
                 <th className="py-2">Unidad</th>
-                <th className="py-2">Safety Stock</th>
+                <th className="py-2">Sucursal</th>
                 <th className="py-2">Stock</th>
                 <th className="py-2">Acciones</th>
               </tr>
@@ -473,7 +492,7 @@ export default function ProductsPage() {
                   <td className="py-2">{p.name}</td>
                   <td className="py-2">{p.code}</td>
                   <td className="py-2">{p.unit.name}</td>
-                  <td className="py-2 font-medium">{p.safetyStock}</td>
+                  <td className="py-2">{p.branch?.name}</td>
                   <td className="py-2 font-medium">{p.stock}</td>
 
                   <td className="py-2 flex gap-1">

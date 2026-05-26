@@ -14,7 +14,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await logout();
-    router.push("/");
+    router.replace("/");
   };
 
   return (
@@ -134,7 +134,7 @@ export default function Navbar() {
               </div>
 
               <Link
-                href="/sales"
+                href="/ventas"
                 className="px-3 py-2 rounded-md hover:bg-gray-700 hover:text-white"
               >
                 Ventas

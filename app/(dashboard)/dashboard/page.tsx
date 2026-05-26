@@ -1,11 +1,8 @@
 "use client";
 
 import { AuthGuard } from "../../../lib/auth-guard";
-import { useRouter } from "next/navigation";
 
 function DashboardContent() {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

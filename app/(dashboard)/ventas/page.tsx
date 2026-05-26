@@ -6,9 +6,9 @@ import Modal from "../../../components/Modal";
 type Sale = {
   id: string;
   quantity: number;
-  saleDate: string;
+  movementDate: string;
   product: { name: string };
-  branch: { name: string };
+  branch: { id: string; name: string };
 };
 
 type PreviewItem = {
@@ -38,6 +38,7 @@ export default function SalesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [branchFilter, setBranchFilter] = useState("");
   const [quantity, setQuantity] = useState("");
   const [saleDate, setSaleDate] = useState(
     new Date().toISOString().split("T")[0],
@@ -49,7 +50,7 @@ export default function SalesPage() {
 
   const fetchAll = async () => {
     const [s, p, b] = await Promise.all([
-      fetch("/api/sales"),
+      fetch("/api/stock-movements"),
       fetch("/api/products"),
       fetch("/api/branches"),
     ]);
@@ -69,23 +70,6 @@ export default function SalesPage() {
     };
     load();
   }, []);
-
-  // ✅ SUBIR XML (TIPADO CORRECTO)
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const res = await fetch("/api/sales/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data: PreviewItem[] = await res.json();
-    setPreview(data);
-  };
 
   // ✅ EDITAR MATCH
   const updateMatch = (index: number, productId: string) => {
@@ -152,12 +136,6 @@ export default function SalesPage() {
     fetchAll();
   };
 
-  // ✅ ELIMINAR
-  const remove = async (id: string) => {
-    await fetch(`/api/sales/${id}`, { method: "DELETE" });
-    fetchAll();
-  };
-
   // ✅ CREAR VENTA MANUAL
   const saveManualSale = async () => {
     if (!selectedProductId || !selectedBranchId || !quantity) {
@@ -215,8 +193,10 @@ export default function SalesPage() {
 
   // Filtrado y ordenamiento de ventas
   const filteredSales = sales
-    .filter((sale) =>
-      sale.product.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    .filter(
+      (sale) =>
+        (!branchFilter || sale.branch?.id === branchFilter) &&
+        sale.product.name.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a, b) => {
       if (sortBy === "product") {
@@ -224,7 +204,9 @@ export default function SalesPage() {
       } else if (sortBy === "quantity") {
         return b.quantity - a.quantity;
       }
-      return new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime();
+      return (
+        new Date(b.movementDate).getTime() - new Date(a.movementDate).getTime()
+      );
     });
 
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
@@ -333,13 +315,13 @@ export default function SalesPage() {
         </div>
       </Modal>
 
-      {/* SUBIR XML */}
+      {/* SUBIR XML 
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="font-bold mb-4 text-gray-900">
           Importar Ventas desde XML
         </h2>
         <input type="file" accept=".xml" onChange={handleUpload} />
-      </div>
+      </div>*/}
 
       {/* 🔥 PREVIEW */}
       {preview.length > 0 && (
@@ -407,44 +389,60 @@ export default function SalesPage() {
 
       {/* 📊 TABLA REAL */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Ventas Registradas
-          </h2>
-          <div className="flex gap-3">
-            <div className="relative">
-              <svg
-                className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                placeholder="Buscar por producto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Ventas Registradas
+        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full max-w-2xl mb-4">
+          <div className="relative flex-1">
+            <svg
+              className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <option value="date">Ordenar por: Fecha (Reciente)</option>
-              <option value="product">Ordenar por: Producto</option>
-              <option value="quantity">Ordenar por: Cantidad</option>
-            </select>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar por producto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
           </div>
+
+          <select
+            value={branchFilter}
+            onChange={(e) => {
+              setBranchFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Todas las sucursales</option>
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) =>
+              setSortBy(e.target.value as "product" | "date" | "quantity")
+            }
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="date">Ordenar por: Fecha (Reciente)</option>
+            <option value="product">Ordenar por: Producto</option>
+            <option value="quantity">Ordenar por: Cantidad</option>
+          </select>
         </div>
 
         <div className="overflow-x-auto">
@@ -463,9 +461,6 @@ export default function SalesPage() {
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                   Fecha
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Acciones
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -481,15 +476,7 @@ export default function SalesPage() {
                     {s.quantity}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(s.saleDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <button
-                      className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-md font-medium transition"
-                      onClick={() => remove(s.id)}
-                    >
-                      Eliminar
-                    </button>
+                    {new Date(s.movementDate).toLocaleDateString()}
                   </td>
                 </tr>
               ))}

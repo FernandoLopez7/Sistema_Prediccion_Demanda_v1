@@ -69,6 +69,7 @@ export default function MaterialsPage() {
 
   // Estados para búsqueda, ordenamiento y paginación con TanStack Table
   const [globalFilter, setGlobalFilter] = useState("");
+  const [branchFilter, setBranchFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const itemsPerPage = 15;
 
@@ -133,8 +134,13 @@ export default function MaterialsPage() {
     }),
   ];
 
+  const filteredMaterials = materials.filter((material) => {
+    if (!branchFilter) return true;
+    return material.branchId === branchFilter;
+  });
+
   const table = useReactTable({
-    data: materials,
+    data: filteredMaterials,
     columns,
     state: {
       sorting,
@@ -172,7 +178,7 @@ export default function MaterialsPage() {
 
   useEffect(() => {
     table.setPageIndex(0);
-  }, [globalFilter]);
+  }, [table, globalFilter, branchFilter]);
 
   // =============================
   // FETCH
@@ -639,11 +645,11 @@ export default function MaterialsPage() {
 
         {/* TABLE */}
         <div className="bg-white p-6 rounded-lg shadow overflow-auto">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col gap-4 justify-between items-start md:items-center md:flex-row mb-6">
             <h2 className="text-lg font-semibold text-gray-900">
               Lista de Materiales
             </h2>
-            <div className="flex gap-3 items-center w-full max-w-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full max-w-2xl">
               <div className="relative flex-1">
                 <svg
                   className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -665,6 +671,20 @@ export default function MaterialsPage() {
                   onChange={(e) => setGlobalFilter(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
+              </div>
+              <div className="flex-shrink-0">
+                <select
+                  value={branchFilter}
+                  onChange={(e) => setBranchFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">Todas las sucursales</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

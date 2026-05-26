@@ -1,51 +1,37 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+const userId = "1";
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const entity = url.searchParams.get("entity");
-    const type = url.searchParams.get("type");
-    const productId = url.searchParams.get("productId");
-    const materialId = url.searchParams.get("materialId");
+    const branchId = url.searchParams.get("branchId");
 
-    const where: any = {};
+    const where: any = {
+      userId,
+      type: "OUT",
+      productId: {
+        not: null,
+      },
+    };
 
-    if (entity === "product") {
-      where.productId = { not: null };
-    } else if (entity === "material") {
-      where.materialId = { not: null };
+    if (branchId) {
+      where.branchId = branchId;
     }
 
-    if (type) {
-      where.type = type;
-    }
-
-    if (productId) {
-      where.productId = productId;
-    }
-
-    if (materialId) {
-      where.materialId = materialId;
-    }
-
-    const movements = await prisma.stockMovement.findMany({
+    const stockMovements = await prisma.stockMovement.findMany({
       where,
-      orderBy: { movementDate: "desc" },
       include: {
-        product: {
-          select: { id: true, name: true, code: true },
-        },
-        material: {
-          select: { id: true, name: true, code: true },
-        },
-        branch: {
-          select: { id: true, name: true },
-        },
+        product: true,
+        branch: true,
+      },
+      orderBy: {
+        movementDate: "desc",
       },
     });
 
-    return NextResponse.json(movements);
+    return NextResponse.json(stockMovements);
   } catch (error) {
     console.error("GET /stock-movements error:", error);
     return NextResponse.json(

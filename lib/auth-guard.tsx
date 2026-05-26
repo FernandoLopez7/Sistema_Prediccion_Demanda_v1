@@ -2,7 +2,7 @@
 
 import { useAuth } from "./auth-context";
 import { useRouter } from "next/navigation";
-import { useEffect, ReactNode } from "react";
+import { useEffect, useState, ReactNode } from "react";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -11,12 +11,17 @@ interface AuthGuardProps {
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasMounted && !loading && !user) {
+      router.replace("/");
     }
-  }, [user, loading, router]);
+  }, [hasMounted, user, loading, router]);
 
   if (loading) {
     return (

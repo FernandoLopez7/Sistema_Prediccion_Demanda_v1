@@ -15,10 +15,7 @@ export async function POST(req: Request) {
     const items: ConfirmItem[] = await req.json();
 
     if (!Array.isArray(items)) {
-      return NextResponse.json(
-        { error: "Formato inválido" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Formato inválido" }, { status: 400 });
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -51,7 +48,7 @@ export async function POST(req: Request) {
         // 🔴 VALIDAR STOCK
         if (product.stock < qty) {
           throw new Error(
-            `Stock insuficiente para ${product.name}. Disponible: ${product.stock}`
+            `Stock insuficiente para ${product.name}. Disponible: ${product.stock}`,
           );
         }
 
@@ -80,10 +77,12 @@ export async function POST(req: Request) {
           data: {
             productId: product.id,
             userId,
+            branchId: item.branchId,
             quantity: qty,
             type: "OUT",
             previousStock: product.stock,
             newStock,
+            movementDate: new Date(),
           },
         });
 
@@ -94,13 +93,12 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true, count: result.count });
-
   } catch (error: any) {
     console.error("CONFIRM ERROR:", error);
 
     return NextResponse.json(
       { error: error.message || "Error al guardar ventas" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
