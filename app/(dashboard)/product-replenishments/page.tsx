@@ -16,9 +16,17 @@ type Product = {
   branch: {
     name: string;
   };
+  family: {
+    name: string;
+  };
 };
 
 type Branch = {
+  id: string;
+  name: string;
+};
+
+type family = {
   id: string;
   name: string;
 };
@@ -31,10 +39,12 @@ type ReplenishItem = {
 export default function ProductReplenishmentsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [families, setFamilies] = useState<family[]>([]);
   const [bulkStockItems, setBulkStockItems] = useState<ReplenishItem[]>([
     { productId: "", quantity: "" },
   ]);
   const [bulkStockBranchId, setBulkStockBranchId] = useState("");
+  const [bulkStockFamilyId, setBulkStockFamilyId] = useState("");
   const [bulkStockDate, setBulkStockDate] = useState("");
 
   // =============================
@@ -52,9 +62,16 @@ export default function ProductReplenishmentsPage() {
     setBranches(data);
   };
 
+  const fetchFamilies = async () => {
+    const res = await fetch("/api/families");
+    const data = await res.json();
+    setFamilies(data);
+  }
+
   useEffect(() => {
     fetchProducts();
     fetchBranches();
+    fetchFamilies();
   }, []);
 
   // =============================
@@ -96,12 +113,14 @@ export default function ProductReplenishmentsPage() {
       body: JSON.stringify({
         items,
         branchId: bulkStockBranchId || undefined,
+        familyId: bulkStockFamilyId || undefined,
         movementDate: bulkStockDate || undefined,
       }),
     });
 
     setBulkStockItems([{ productId: "", quantity: "" }]);
     setBulkStockBranchId("");
+    setBulkStockFamilyId("");
     setBulkStockDate("");
     fetchProducts();
   };
@@ -149,6 +168,24 @@ export default function ProductReplenishmentsPage() {
                   {branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
                       {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Familia
+                </label>
+                <select
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
+                  value={bulkStockFamilyId}
+                  onChange={(e) => setBulkStockFamilyId(e.target.value)}
+                >
+                  <option value="">Seleccionar familia</option>
+                  {families.map((family) => (
+                    <option key={family.id} value={family.id}>
+                      {family.name}
                     </option>
                   ))}
                 </select>
@@ -243,6 +280,7 @@ export default function ProductReplenishmentsPage() {
                 onClick={() => {
                   setBulkStockItems([{ productId: "", quantity: "" }]);
                   setBulkStockBranchId("");
+                  setBulkStockFamilyId("");
                   setBulkStockDate("");
                 }}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition"

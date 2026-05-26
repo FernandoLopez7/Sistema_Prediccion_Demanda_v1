@@ -24,6 +24,9 @@ export async function GET() {
         },
         branch: {
           select: { name: true } // 🔥 nombre sucursal
+        },
+        family: {
+          select: { name: true } // 🔥 nombre familia
         }
       }
     })
@@ -49,6 +52,7 @@ export async function POST(req: Request) {
       code,
       unitId,     // 🔥 cambio
       branchId,   // 🔥 nuevo
+      familyId,     // 🔥 nuevo
       safetyStock,
       stock,
       recipes
@@ -57,15 +61,16 @@ export async function POST(req: Request) {
       code?: string
       unitId: string
       branchId: string
+      familyId: string
       safetyStock?: number
       stock?: number
       recipes: RecipeInput[]
     } = body
 
     // 🔴 validación mínima correcta
-    if (!name || !unitId || !branchId) {
+    if (!name || !unitId || !branchId || !familyId) {
       return NextResponse.json(
-        { error: 'Nombre, unidad y sucursal requeridos' },
+        { error: 'Nombre, unidad, sucursal y familia requeridos' },
         { status: 400 }
       )
     }
@@ -86,6 +91,7 @@ export async function POST(req: Request) {
           code: code || null,
           unitId,     // 🔥 FIX
           branchId,   // 🔥 FIX
+          familyId,   // 🔥 FIX
           stock: Number(stock) || 0,
           safetyStock: Number(safetyStock) || 0
         }

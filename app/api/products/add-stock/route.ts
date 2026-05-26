@@ -5,7 +5,7 @@ const userId = "1"; // luego session
 
 export async function POST(req: Request) {
   try {
-    const { productId, quantity, branchId, movementDate } = await req.json();
+    const { productId, quantity, branchId, familyId, movementDate } = await req.json();
 
     // 🔴 validaciones
     if (!productId || !quantity) {
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
           product: { connect: { id: productId } },
           user: { connect: { id: userId } },
           branch: branchId ? { connect: { id: branchId } } : undefined,
+          family: familyId ? { connect: { id: familyId } } : undefined,
           quantity: qty,
           type: "IN",
           previousStock,

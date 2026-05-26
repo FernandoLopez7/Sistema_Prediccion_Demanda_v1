@@ -18,8 +18,9 @@ export async function PUT(req: Request) {
     const {
       name,
       code,
-      unitId,     // 🔥 cambio
-      branchId,   // 🔥 nuevo
+      unitId, // 🔥 cambio
+      branchId, // 🔥 nuevo
+      familyId, // 🔥 nuevo
       safetyStock,
       stock,
       recipes,
@@ -28,6 +29,7 @@ export async function PUT(req: Request) {
       code?: string;
       unitId: string;
       branchId: string;
+      familyId: string;
       safetyStock?: number;
       stock?: number;
       recipes: RecipeInput[];
@@ -36,31 +38,38 @@ export async function PUT(req: Request) {
     if (!id) {
       return NextResponse.json({ error: "ID requerido" }, { status: 400 });
     }
+    console.log({
+      name,
+      unitId,
+      branchId,
+      familyId,
+      recipes,
+    });
 
-    if (!name || !unitId || !branchId) {
+    if (!name || !unitId || !branchId || !familyId) {
       return NextResponse.json(
-        { error: "Nombre, unidad y sucursal requeridos" },
+        { error: "Nombre, unidad, sucursal y familia requeridos" },
         { status: 400 },
       );
     }
 
-    if (!recipes || !Array.isArray(recipes) || recipes.length === 0) {
+    if (!Array.isArray(recipes)) {
       return NextResponse.json(
-        { error: "Debe incluir al menos una receta" },
+        { error: "Formato inválido de recetas" },
         { status: 400 },
       );
     }
 
     const updatedProduct = await prisma.$transaction(async (tx) => {
-
       // 1. actualizar producto
       const product = await tx.product.update({
         where: { id },
         data: {
           name,
           code: code || null,
-          unitId,     // 🔥 FIX
-          branchId,   // 🔥 FIX
+          unitId, // 🔥 FIX
+          branchId, // 🔥 FIX
+          familyId, // 🔥 FIX
           ...(stock !== undefined && { stock: Number(stock) }),
           safetyStock: Number(safetyStock) || 0,
         },
@@ -93,7 +102,6 @@ export async function PUT(req: Request) {
     });
 
     return NextResponse.json(updatedProduct);
-
   } catch (error) {
     console.error("PUT /products error:", error);
 
@@ -113,7 +121,6 @@ export async function DELETE(req: Request) {
     }
 
     await prisma.$transaction(async (tx) => {
-
       // 1. eliminar recetas relacionadas
       await tx.recipe.deleteMany({
         where: { productId: id },
@@ -123,11 +130,9 @@ export async function DELETE(req: Request) {
       await tx.product.delete({
         where: { id },
       });
-
     });
 
     return NextResponse.json({ ok: true });
-
   } catch (error) {
     console.error("DELETE /products error:", error);
 
