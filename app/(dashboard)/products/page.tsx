@@ -31,6 +31,10 @@ type Product = {
   branch: {
     name: string;
   };
+  familyId: string;
+  family: {
+    name: string;
+  };
   recipes: {
     materialId: string;
     quantity: number;
@@ -51,12 +55,14 @@ export default function ProductsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [units, setUnits] = useState<{ id: string; name: string }[]>([]);
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [families, setFamilies] = useState<{ id: string; name: string }[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [unitId, setUnitId] = useState("");
   const [branchId, setBranchId] = useState("");
+  const [familyId, setFamilyId] = useState("");
   const [safetyStock, setSafetyStock] = useState("");
   const [stock, setStock] = useState("");
 
@@ -96,6 +102,12 @@ export default function ProductsPage() {
     setBranches(data);
   };
 
+  const fetchFamilies = async () => {
+    const res = await fetch("/api/families");
+    const data = await res.json();
+    setFamilies(data);
+  };
+
   useEffect(() => {
     const load = async () => {
       await Promise.all([
@@ -103,6 +115,7 @@ export default function ProductsPage() {
         fetchMaterials(),
         fetchUnits(),
         fetchBranches(),
+        fetchFamilies(),
       ]);
     };
     load();
@@ -140,6 +153,7 @@ export default function ProductsPage() {
         code,
         unitId,
         branchId,
+        familyId,
         safetyStock,
         stock,
         recipes,
@@ -156,6 +170,7 @@ export default function ProductsPage() {
     setCode(p.code || "");
     setUnitId(p.unitId);
     setBranchId(p.branchId);
+    setFamilyId(p.familyId);
     setSafetyStock(p.safetyStock.toString());
     setStock(p.stock?.toString() ?? "0");
 
@@ -186,6 +201,7 @@ export default function ProductsPage() {
     setCode("");
     setUnitId("");
     setBranchId("");
+    setFamilyId("");
     setSafetyStock("");
     setStock("");
     setRecipes([]);
@@ -304,6 +320,25 @@ export default function ProductsPage() {
                   ))}
                 </select>
               </div>
+
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Familia
+                </label>
+                <select
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  value={familyId}
+                  onChange={(e) => setFamilyId(e.target.value)}
+                >
+                  <option value="">Seleccionar familia</option>
+                  {families.map((family) => (
+                    <option key={family.id} value={family.id}>
+                      {family.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1.5">
                   Stock Seguridad
