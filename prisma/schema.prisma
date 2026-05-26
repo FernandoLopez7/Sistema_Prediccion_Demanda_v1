@@ -33,6 +33,7 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
 
   Branches       Branch[]
+  families       Family[]
   stockMovements StockMovement[]
   materials      Material[]
   products       Product[]
@@ -56,6 +57,18 @@ model Branch {
   @@map("branches")
 }
 
+model Family {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+  products  Product[]
+
+  @@map("families")
+}
+
 model Product {
   id             String          @id @default(cuid())
   userId         String          @map("user_id")
@@ -65,11 +78,13 @@ model Product {
   stock          Float           @default(0) // 👈 NUEVO
   safetyStock    Float           @default(0) @map("safety_stock")
   active         Boolean         @default(true)
+  familyId       String?         @map("family_id")
   createdAt      DateTime        @default(now()) @map("created_at")
   branchId       String          @map("Sucursal")
   unit           Unit            @relation(fields: [unitId], references: [id])
   branch         Branch          @relation(fields: [branchId], references: [id])
   user           User            @relation(fields: [userId], references: [id])
+  family         Family?         @relation(fields: [familyId], references: [id])
   recipes        Recipe[]
   sales          Sale[]
   stockMovements StockMovement[]
