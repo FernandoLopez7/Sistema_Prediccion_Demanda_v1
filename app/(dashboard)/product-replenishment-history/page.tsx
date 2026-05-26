@@ -29,10 +29,6 @@ type StockMovement = {
     id: string;
     name: string;
   } | null;
-  family: {
-    id: string;
-    name: string;
-  } | null;
 };
 
 const columnHelper = createColumnHelper<StockMovement>();
@@ -94,10 +90,6 @@ export default function ProductReplenishmentHistoryPage() {
       header: "Sucursal",
       cell: (info) => info.getValue() || "N/A",
     }),
-    columnHelper.accessor("family.name", {
-      header: "Familia",
-      cell: (info) => info.getValue() || "N/A",
-    }),
     columnHelper.accessor("movementDate", {
       header: "Fecha",
       cell: (info) => {
@@ -137,14 +129,12 @@ export default function ProductReplenishmentHistoryPage() {
       const productName = row.original.product?.name?.toLowerCase() || "";
       const productCode = row.original.product?.code?.toLowerCase() || "";
       const branchName = row.original.branch?.name?.toLowerCase() || "";
-      const familyName = row.original.family?.name?.toLowerCase() || "";
       const notes = row.original.notes?.toLowerCase() || "";
 
       return (
         productName.includes(value) ||
         productCode.includes(value) ||
         branchName.includes(value) ||
-        familyName.includes(value) ||
         notes.includes(value)
       );
     },

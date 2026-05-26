@@ -38,13 +38,6 @@ export async function PUT(req: Request) {
     if (!id) {
       return NextResponse.json({ error: "ID requerido" }, { status: 400 });
     }
-    console.log({
-      name,
-      unitId,
-      branchId,
-      familyId,
-      recipes,
-    });
 
     if (!name || !unitId || !branchId || !familyId) {
       return NextResponse.json(
