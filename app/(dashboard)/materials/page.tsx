@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -73,9 +73,14 @@ export default function MaterialsPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const itemsPerPage = 15;
 
-  const columnHelper = createColumnHelper<Material>();
+  const startEditRef = useRef<(m: Material) => void>(() => {});
+  const openReplenishModalRef = useRef<(m: Material) => void>(() => {});
+  const deleteMaterialRef = useRef<(id: string) => void>(() => {});
 
-  const columns = [
+  const columnHelper = useMemo(() => createColumnHelper<Material>(), []);
+
+  const columns = useMemo(
+    () => [
     columnHelper.accessor("name", {
       header: () => <span>Nombre</span>,
       cell: (info) => info.getValue(),
@@ -104,7 +109,7 @@ export default function MaterialsPage() {
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
           <button
-            onClick={() => startEdit(row.original)}
+            onClick={() => startEditRef.current(row.original)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200"
             title="Editar material"
           >
@@ -113,7 +118,7 @@ export default function MaterialsPage() {
           </button>
 
           <button
-            onClick={() => openReplenishModal(row.original)}
+            onClick={() => openReplenishModalRef.current(row.original)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 hover:border-green-300 transition-colors duration-200"
             title="Reabastecer material"
           >
@@ -122,7 +127,7 @@ export default function MaterialsPage() {
           </button>
 
           <button
-            onClick={() => deleteMaterial(row.original.id)}
+            onClick={() => deleteMaterialRef.current(row.original.id)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors duration-200"
             title="Eliminar material"
           >
@@ -132,12 +137,35 @@ export default function MaterialsPage() {
         </div>
       ),
     }),
-  ];
+    ],
+    [columnHelper],
+  );
 
-  const filteredMaterials = materials.filter((material) => {
-    if (!branchFilter) return true;
-    return material.branchId === branchFilter;
-  });
+  const filteredMaterials = useMemo(
+    () => materials.filter((material) => {
+      if (!branchFilter) return true;
+      return material.branchId === branchFilter;
+    }),
+    [materials, branchFilter],
+  );
+
+  const globalFilterFn = useCallback((row, _columnId, filterValue) => {
+    const value = String(filterValue).toLowerCase();
+    const unit = row.getValue("unit") as { name: string } | null;
+    const branch = row.getValue("branch") as { name: string } | null;
+    return (
+      String(row.getValue("name")).toLowerCase().includes(value) ||
+      String(row.getValue("code") ?? "")
+        .toLowerCase()
+        .includes(value) ||
+      String(unit?.name ?? "")
+        .toLowerCase()
+        .includes(value) ||
+      String(branch?.name ?? "")
+        .toLowerCase()
+        .includes(value)
+    );
+  }, []);
 
   const table = useReactTable({
     data: filteredMaterials,
@@ -152,23 +180,7 @@ export default function MaterialsPage() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const value = String(filterValue).toLowerCase();
-      const unit = row.getValue("unit") as { name: string } | null;
-      const branch = row.getValue("branch") as { name: string } | null;
-      return (
-        String(row.getValue("name")).toLowerCase().includes(value) ||
-        String(row.getValue("code") ?? "")
-          .toLowerCase()
-          .includes(value) ||
-        String(unit?.name ?? "")
-          .toLowerCase()
-          .includes(value) ||
-        String(branch?.name ?? "")
-          .toLowerCase()
-          .includes(value)
-      );
-    },
+    globalFilterFn,
     initialState: {
       pagination: {
         pageSize: itemsPerPage,
@@ -178,7 +190,7 @@ export default function MaterialsPage() {
 
   useEffect(() => {
     table.setPageIndex(0);
-  }, [table, globalFilter, branchFilter]);
+  }, [globalFilter, branchFilter]);
 
   // =============================
   // FETCH
@@ -330,6 +342,12 @@ export default function MaterialsPage() {
     setReorderPoint("");
     setIsModalOpen(false);
   };
+
+  useEffect(() => {
+    startEditRef.current = startEdit;
+    openReplenishModalRef.current = openReplenishModal;
+    deleteMaterialRef.current = deleteMaterial;
+  }, [startEdit, openReplenishModal, deleteMaterial]);
 
   // =============================
   // UI
