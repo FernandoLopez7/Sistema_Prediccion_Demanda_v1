@@ -10,6 +10,7 @@ import {
   SortingState,
   flexRender,
   createColumnHelper,
+  Row,
 } from "@tanstack/react-table";
 import Modal from "../../../components/Modal";
 import { PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
@@ -65,10 +66,12 @@ export default function MaterialsPage() {
   );
   const [replenishQuantity, setReplenishQuantity] = useState("");
   const [replenishBranchId, setReplenishBranchId] = useState("");
+
+  
   const [replenishDate, setReplenishDate] = useState("");
 
   // Estados para búsqueda, ordenamiento y paginación con TanStack Table
-  const [globalFilter, setGlobalFilter] = useState("");
+  
   const [branchFilter, setBranchFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const itemsPerPage = 15;
@@ -149,33 +152,34 @@ export default function MaterialsPage() {
     [materials, branchFilter],
   );
 
-  const globalFilterFn = useCallback((row, _columnId, filterValue) => {
-    const value = String(filterValue).toLowerCase();
-    const unit = row.getValue("unit") as { name: string } | null;
-    const branch = row.getValue("branch") as { name: string } | null;
-    return (
-      String(row.getValue("name")).toLowerCase().includes(value) ||
-      String(row.getValue("code") ?? "")
-        .toLowerCase()
-        .includes(value) ||
-      String(unit?.name ?? "")
-        .toLowerCase()
-        .includes(value) ||
-      String(branch?.name ?? "")
-        .toLowerCase()
-        .includes(value)
-    );
-  }, []);
+  
+    const globalFilterFn = useCallback((row: Row<Material>, _columnId: string, filterValue: unknown) => {
+      const value = String(filterValue ?? "").toLowerCase();
+      const unit = row.getValue("unit") as { name: string } | null;
+      const branch = row.getValue("branch") as { name: string } | null;
+      return (
+        String(row.getValue("name")).toLowerCase().includes(value) ||
+        String(row.getValue("code") ?? "")
+          .toLowerCase()
+          .includes(value) ||
+        String(unit?.name ?? "")
+          .toLowerCase()
+          .includes(value) ||
+        String(branch?.name ?? "")
+          .toLowerCase()
+          .includes(value)
+      );
+    }, []);
 
   const table = useReactTable({
     data: filteredMaterials,
     columns,
     state: {
       sorting,
-      globalFilter,
+      
     },
     onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
+    
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -188,20 +192,22 @@ export default function MaterialsPage() {
     },
   });
 
+  const tableGlobalFilter = table.getState().globalFilter;
+
   useEffect(() => {
     table.setPageIndex(0);
-  }, [globalFilter, branchFilter]);
+  }, [branchFilter, table, tableGlobalFilter]);
 
   // =============================
   // FETCH
   // =============================
-  const fetchMaterials = async () => {
+  const fetchMaterials = useCallback(async () => {
     const res = await fetch("/api/materials");
     const data = await res.json();
     setMaterials(data);
-  };
+  }, []);
 
-  const fetchUnits = async () => {
+  const fetchUnits = useCallback(async () => {
     try {
       const res = await fetch("/api/units");
       const data = await res.json();
@@ -217,9 +223,9 @@ export default function MaterialsPage() {
       console.error("Error fetching units:", error);
       setUnits([]);
     }
-  };
+  }, []);
 
-  const fetchBranches = async () => {
+  const fetchBranches = useCallback(async () => {
     try {
       const res = await fetch("/api/branches");
       const data = await res.json();
@@ -235,14 +241,16 @@ export default function MaterialsPage() {
       console.error("Error fetching branches:", error);
       setBranches([]);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const load = async () => {
       await Promise.all([fetchMaterials(), fetchUnits(), fetchBranches()]);
     };
     load();
-  }, []);
+  }, [fetchMaterials, fetchUnits, fetchBranches]);
+
+  
 
   // =============================
   // SAVE
@@ -276,18 +284,18 @@ export default function MaterialsPage() {
     fetchMaterials();
   };
 
-  const deleteMaterial = async (id: string) => {
+  const deleteMaterial = useCallback(async (id: string) => {
     await fetch(`/api/materials/${id}`, { method: "DELETE" });
     fetchMaterials();
-  };
+  }, [fetchMaterials]);
 
-  const openReplenishModal = (material: Material) => {
+  const openReplenishModal = useCallback((material: Material) => {
     setReplenishMaterialId(material.id);
     setReplenishQuantity("");
     setReplenishBranchId(material.branchId || "");
     setReplenishDate("");
     setIsReplenishModalOpen(true);
-  };
+  }, []);
 
   const saveReplenishMaterial = async () => {
     if (!replenishMaterialId || !replenishBranchId || !replenishQuantity) {
@@ -309,7 +317,7 @@ export default function MaterialsPage() {
     fetchMaterials();
   };
 
-  const startEdit = (m: Material) => {
+  const startEdit = useCallback((m: Material) => {
     setEditingId(m.id);
     setName(m.name);
     setCode(m.code || "");
@@ -324,7 +332,7 @@ export default function MaterialsPage() {
     setWarehouse(m.warehouse || "");
     setReorderPoint(m.reorderPoint?.toString() || "");
     setIsModalOpen(true);
-  };
+  }, []);
 
   const resetForm = () => {
     setEditingId(null);
@@ -685,8 +693,8 @@ export default function MaterialsPage() {
                 <input
                   type="text"
                   placeholder="Buscar por nombre o código..."
-                  value={globalFilter}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  value={table.getState().globalFilter ?? ""}
+                  onChange={(e) => table.setGlobalFilter(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
