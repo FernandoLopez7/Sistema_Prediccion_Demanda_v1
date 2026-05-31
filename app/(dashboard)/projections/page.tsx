@@ -214,7 +214,7 @@ export default function ProjectionsPage() {
     if (actual === null) return "—";
     const diff = actual - projected;
     const sign = diff > 0 ? "+" : "";
-    return `${sign}${diff}`;
+    return `${sign}${diff.toFixed(2)}`;
   };
 
   return (
@@ -558,172 +558,7 @@ export default function ProjectionsPage() {
                       {isExpanded && (
                         <tr className="bg-slate-50">
                           <td colSpan={6} className="px-4 py-4">
-                            <div className="grid gap-4 lg:grid-cols-4">
-                              <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="text-sm font-semibold text-slate-900">
-                                      Cálculos de pronóstico
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">
-                                      Modelos de series temporales
-                                    </p>
-                                  </div>
-                                  <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">
-                                    Modelos
-                                  </span>
-                                </div>
-                                <div className="mt-5 space-y-3 text-sm text-slate-700">
-                                  <div className="flex items-center justify-between gap-4">
-                                    <span>Promedio móvil simple</span>
-                                    <span className="font-semibold text-slate-900">
-                                      {product.simpleMovingAverage}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-4">
-                                    <span>Promedio móvil</span>
-                                    <span className="font-semibold text-slate-900">
-                                      {product.movingAverage}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-4">
-                                    <span>Ponderado</span>
-                                    <span className="font-semibold text-slate-900">
-                                      {product.weightedMovingAverage}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-4">
-                                    <span>Suavizado exp.</span>
-                                    <span className="font-semibold text-slate-900">
-                                      {product.exponentialSmoothing}
-                                    </span>
-                                  </div>
-                                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
-                                    <div className="flex items-center justify-between">
-                                      <span>MAPE</span>
-                                      <span className="font-semibold">
-                                        {product.mapeSimple}%
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="text-sm font-semibold text-slate-900">
-                                      Demandas reales
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">
-                                      Últimos meses registrados
-                                    </p>
-                                  </div>
-                                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                    Histórico
-                                  </span>
-                                </div>
-                                <div className="mt-5 space-y-3 text-sm text-slate-700">
-                                  {product.actualMonths.map((month, index) => (
-                                    <div
-                                      key={month}
-                                      className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2"
-                                    >
-                                      <span>{month}</span>
-                                      <span className="font-semibold text-slate-900">
-                                        {product.monthlyActuals[index]}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="col-span-1 lg:col-span-2 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="text-sm font-semibold text-slate-900">
-                                      Proyección vs Real
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">
-                                      Comparación mensual con colores intuitivos
-                                    </p>
-                                  </div>
-                                  <div className="flex gap-2 items-center text-xs text-slate-500">
-                                    <span className="inline-flex h-2 w-2 rounded-full bg-indigo-500" />
-                                    <span>Proyección</span>
-                                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                                    <span>Real</span>
-                                  </div>
-                                </div>
-                                <div className="mt-5 overflow-x-auto">
-                                  <table className="min-w-full text-sm text-slate-700">
-                                    <thead className="border-b border-slate-200 text-left text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                                      <tr>
-                                        <th className="px-3 py-3">Mes</th>
-                                        <th className="px-3 py-3">
-                                          Proyección
-                                        </th>
-                                        <th className="px-3 py-3">Real</th>
-                                        <th className="px-3 py-3">
-                                          Diferencia
-                                        </th>
-                                        <th className="px-3 py-3">Error</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-200">
-                                      {product.projectedSales.map((proj) => {
-                                        const isAbove =
-                                          proj.actual !== null &&
-                                          proj.actual >= proj.quantity;
-                                        const badgeClass =
-                                          getComparisonBadgeClass(
-                                            proj.quantity,
-                                            proj.actual,
-                                          );
-                                        return (
-                                          <tr
-                                            key={proj.month}
-                                            className={
-                                              proj.actual === null
-                                                ? "bg-slate-50"
-                                                : isAbove
-                                                  ? "bg-emerald-50/40"
-                                                  : "bg-rose-50/40"
-                                            }
-                                          >
-                                            <td className="px-3 py-3 text-sm text-slate-900 font-medium">
-                                              {proj.month}
-                                            </td>
-                                            <td className="px-3 py-3 font-semibold text-slate-900">
-                                              {proj.quantity}
-                                            </td>
-                                            <td className="px-3 py-3 font-semibold text-slate-900">
-                                              {proj.actual ?? "—"}
-                                            </td>
-                                            <td className="px-3 py-3">
-                                              <span
-                                                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${proj.actual === null ? "border-slate-200 text-slate-500 bg-slate-100" : proj.actual >= proj.quantity ? "border-emerald-200 text-emerald-700 bg-emerald-100" : "border-rose-200 text-rose-700 bg-rose-100"}`}
-                                              >
-                                                {formatDifference(
-                                                  proj.quantity,
-                                                  proj.actual,
-                                                )}
-                                              </span>
-                                            </td>
-                                            <td className="px-3 py-3">
-                                              <span
-                                                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${badgeClass}`}
-                                              >
-                                                {proj.percentageError === null
-                                                  ? "N/D"
-                                                  : `${proj.percentageError}%`}
-                                              </span>
-                                            </td>
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
+                            <div className="grid gap-4 lg:grid-cols-5">
                               <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
                                 <div className="flex items-center justify-between">
                                   <div>
@@ -765,7 +600,7 @@ export default function ProjectionsPage() {
                                   </div>
                                 </div>
                               </div>
-                              <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-3">
+                              <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4">
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <p className="text-sm font-semibold text-slate-900">
@@ -882,6 +717,171 @@ export default function ProjectionsPage() {
                                       </AreaChart>
                                     </ResponsiveContainer>
                                   </div>
+                                </div>
+                              </div>
+                              <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-900">
+                                      Cálculos de pronóstico
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                      Modelos de series temporales
+                                    </p>
+                                  </div>
+                                  <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                                    Modelos
+                                  </span>
+                                </div>
+                                <div className="mt-5 space-y-3 text-sm text-slate-700">
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span>Promedio móvil simple</span>
+                                    <span className="font-semibold text-slate-900">
+                                      {product.simpleMovingAverage}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span>Promedio móvil</span>
+                                    <span className="font-semibold text-slate-900">
+                                      {product.movingAverage}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span>Ponderado</span>
+                                    <span className="font-semibold text-slate-900">
+                                      {product.weightedMovingAverage}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span>Suavizado exp.</span>
+                                    <span className="font-semibold text-slate-900">
+                                      {product.exponentialSmoothing}
+                                    </span>
+                                  </div>
+                                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+                                    <div className="flex items-center justify-between">
+                                      <span>MAPE</span>
+                                      <span className="font-semibold">
+                                        {product.mapeSimple}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-900">
+                                      Demandas reales
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                      Últimos meses registrados
+                                    </p>
+                                  </div>
+                                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                    Histórico
+                                  </span>
+                                </div>
+                                <div className="mt-5 space-y-3 text-sm text-slate-700">
+                                  {product.actualMonths.map((month, index) => (
+                                    <div
+                                      key={month}
+                                      className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2"
+                                    >
+                                      <span>{month}</span>
+                                      <span className="font-semibold text-slate-900">
+                                        {product.monthlyActuals[index]}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="col-span-1 lg:col-span-3 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-900">
+                                      Proyección vs Real
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                      Comparación mensual con colores intuitivos
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2 items-center text-xs text-slate-500">
+                                    <span className="inline-flex h-2 w-2 rounded-full bg-indigo-500" />
+                                    <span>Proyección</span>
+                                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                                    <span>Real</span>
+                                  </div>
+                                </div>
+                                <div className="mt-5 overflow-x-auto">
+                                  <table className="min-w-full text-sm text-slate-700">
+                                    <thead className="border-b border-slate-200 text-left text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                                      <tr>
+                                        <th className="px-3 py-3">Mes</th>
+                                        <th className="px-3 py-3">
+                                          Proyección
+                                        </th>
+                                        <th className="px-3 py-3">Real</th>
+                                        <th className="px-3 py-3">
+                                          Diferencia
+                                        </th>
+                                        <th className="px-3 py-3">Error</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200">
+                                      {product.projectedSales.map((proj) => {
+                                        const isAbove =
+                                          proj.actual !== null &&
+                                          proj.actual >= proj.quantity;
+                                        const badgeClass =
+                                          getComparisonBadgeClass(
+                                            proj.quantity,
+                                            proj.actual,
+                                          );
+                                        return (
+                                          <tr
+                                            key={proj.month}
+                                            className={
+                                              proj.actual === null
+                                                ? "bg-slate-50"
+                                                : isAbove
+                                                  ? "bg-emerald-50/40"
+                                                  : "bg-rose-50/40"
+                                            }
+                                          >
+                                            <td className="px-3 py-3 text-sm text-slate-900 font-medium">
+                                              {proj.month}
+                                            </td>
+                                            <td className="px-3 py-3 font-semibold text-slate-900">
+                                              {proj.quantity}
+                                            </td>
+                                            <td className="px-3 py-3 font-semibold text-slate-900">
+                                              {proj.actual ?? "—"}
+                                            </td>
+                                            <td className="px-3 py-3">
+                                              <span
+                                                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${proj.actual === null ? "border-slate-200 text-slate-500 bg-slate-100" : proj.actual >= proj.quantity ? "border-emerald-200 text-emerald-700 bg-emerald-100" : "border-rose-200 text-rose-700 bg-rose-100"}`}
+                                              >
+                                                {formatDifference(
+                                                  proj.quantity,
+                                                  proj.actual,
+                                                )}
+                                              </span>
+                                            </td>
+                                            <td className="px-3 py-3">
+                                              <span
+                                                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${badgeClass}`}
+                                              >
+                                                {proj.percentageError === null
+                                                  ? "N/D"
+                                                  : `${proj.percentageError}%`}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
                                 </div>
                               </div>
                             </div>
