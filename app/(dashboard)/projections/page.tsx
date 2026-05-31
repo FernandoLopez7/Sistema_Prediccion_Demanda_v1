@@ -658,23 +658,36 @@ export default function ProjectionsPage() {
                                     <thead className="border-b border-slate-200 text-left text-[11px] uppercase tracking-[0.18em] text-slate-500">
                                       <tr>
                                         <th className="px-3 py-3">Mes</th>
-                                        <th className="px-3 py-3">Proyección</th>
+                                        <th className="px-3 py-3">
+                                          Proyección
+                                        </th>
                                         <th className="px-3 py-3">Real</th>
-                                        <th className="px-3 py-3">Diferencia</th>
+                                        <th className="px-3 py-3">
+                                          Diferencia
+                                        </th>
                                         <th className="px-3 py-3">Error</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200">
                                       {product.projectedSales.map((proj) => {
-                                        const isAbove = proj.actual !== null && proj.actual >= proj.quantity;
-                                        const badgeClass = getComparisonBadgeClass(
-                                          proj.quantity,
-                                          proj.actual,
-                                        );
+                                        const isAbove =
+                                          proj.actual !== null &&
+                                          proj.actual >= proj.quantity;
+                                        const badgeClass =
+                                          getComparisonBadgeClass(
+                                            proj.quantity,
+                                            proj.actual,
+                                          );
                                         return (
                                           <tr
                                             key={proj.month}
-                                            className={proj.actual === null ? "bg-slate-50" : isAbove ? "bg-emerald-50/40" : "bg-rose-50/40"}
+                                            className={
+                                              proj.actual === null
+                                                ? "bg-slate-50"
+                                                : isAbove
+                                                  ? "bg-emerald-50/40"
+                                                  : "bg-rose-50/40"
+                                            }
                                           >
                                             <td className="px-3 py-3 text-sm text-slate-900 font-medium">
                                               {proj.month}
@@ -686,13 +699,22 @@ export default function ProjectionsPage() {
                                               {proj.actual ?? "—"}
                                             </td>
                                             <td className="px-3 py-3">
-                                              <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${proj.actual === null ? "border-slate-200 text-slate-500 bg-slate-100" : proj.actual >= proj.quantity ? "border-emerald-200 text-emerald-700 bg-emerald-100" : "border-rose-200 text-rose-700 bg-rose-100"}`}>
-                                                {formatDifference(proj.quantity, proj.actual)}
+                                              <span
+                                                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${proj.actual === null ? "border-slate-200 text-slate-500 bg-slate-100" : proj.actual >= proj.quantity ? "border-emerald-200 text-emerald-700 bg-emerald-100" : "border-rose-200 text-rose-700 bg-rose-100"}`}
+                                              >
+                                                {formatDifference(
+                                                  proj.quantity,
+                                                  proj.actual,
+                                                )}
                                               </span>
                                             </td>
                                             <td className="px-3 py-3">
-                                              <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${badgeClass}`}>
-                                                {proj.percentageError === null ? "N/D" : `${proj.percentageError}%`}
+                                              <span
+                                                className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${badgeClass}`}
+                                              >
+                                                {proj.percentageError === null
+                                                  ? "N/D"
+                                                  : `${proj.percentageError}%`}
                                               </span>
                                             </td>
                                           </tr>
@@ -756,30 +778,89 @@ export default function ProjectionsPage() {
                                 </div>
                                 <div className="mt-5 overflow-x-auto">
                                   <div className="min-w-[700px] h-[290px]">
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer
+                                      width="100%"
+                                      height="100%"
+                                    >
                                       <AreaChart
-                                        data={product.projectedSales.map((proj) => ({
-                                          month: proj.month,
-                                          projected: proj.quantity,
-                                          actual: proj.actual ?? 0,
-                                        }))}
-                                        margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                                        data={product.projectedSales.map(
+                                          (proj) => ({
+                                            month: proj.month,
+                                            projected: proj.quantity,
+                                            actual: proj.actual ?? 0,
+                                          }),
+                                        )}
+                                        margin={{
+                                          top: 10,
+                                          right: 16,
+                                          left: 0,
+                                          bottom: 0,
+                                        }}
                                       >
                                         <defs>
-                                          <linearGradient id="colorProjected" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.45} />
-                                            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.05} />
+                                          <linearGradient
+                                            id="colorProjected"
+                                            x1="0"
+                                            y1="0"
+                                            x2="0"
+                                            y2="1"
+                                          >
+                                            <stop
+                                              offset="5%"
+                                              stopColor="#4f46e5"
+                                              stopOpacity={0.45}
+                                            />
+                                            <stop
+                                              offset="95%"
+                                              stopColor="#4f46e5"
+                                              stopOpacity={0.05}
+                                            />
                                           </linearGradient>
-                                          <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#059669" stopOpacity={0.45} />
-                                            <stop offset="95%" stopColor="#059669" stopOpacity={0.05} />
+                                          <linearGradient
+                                            id="colorActual"
+                                            x1="0"
+                                            y1="0"
+                                            x2="0"
+                                            y2="1"
+                                          >
+                                            <stop
+                                              offset="5%"
+                                              stopColor="#059669"
+                                              stopOpacity={0.45}
+                                            />
+                                            <stop
+                                              offset="95%"
+                                              stopColor="#059669"
+                                              stopOpacity={0.05}
+                                            />
                                           </linearGradient>
                                         </defs>
-                                        <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
-                                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#475569' }} />
-                                        <YAxis tick={{ fontSize: 12, fill: '#475569' }} />
-                                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }} />
-                                        <Legend wrapperStyle={{ paddingTop: 8 }} />
+                                        <CartesianGrid
+                                          stroke="#e2e8f0"
+                                          strokeDasharray="3 3"
+                                        />
+                                        <XAxis
+                                          dataKey="month"
+                                          tick={{
+                                            fontSize: 12,
+                                            fill: "#475569",
+                                          }}
+                                        />
+                                        <YAxis
+                                          tick={{
+                                            fontSize: 12,
+                                            fill: "#475569",
+                                          }}
+                                        />
+                                        <Tooltip
+                                          contentStyle={{
+                                            borderRadius: 12,
+                                            border: "1px solid #e2e8f0",
+                                          }}
+                                        />
+                                        <Legend
+                                          wrapperStyle={{ paddingTop: 8 }}
+                                        />
                                         <Area
                                           type="monotone"
                                           dataKey="projected"
