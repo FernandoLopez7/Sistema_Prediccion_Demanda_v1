@@ -80,10 +80,8 @@ const getPreviousMonthAverage = (
   count: number,
 ) => {
   const previousKeys = getPreviousMonthKeys(monthKey, count);
-  const previousValues = previousKeys
-    .map((key) => summary[key])
-    .filter((value): value is number => value !== undefined);
-  return previousValues.length ? average(previousValues) : 0;
+  const previousValues = previousKeys.map((key) => summary[key] ?? 0);
+  return average(previousValues);
 };
 
 const average = (values: number[]) =>
@@ -121,6 +119,122 @@ const computeMape = (actuals: number[], forecasts: number[]) => {
     percentages.reduce((sum, value) => sum + value, 0) / percentages.length
   );
 };
+
+const getMonthStart = (year: number, month: number) =>
+  new Date(Date.UTC(year, month - 1, 1));
+
+const getNextMonthStart = (date: Date) =>
+  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { year, month, branchId } = body;
+
+    if (!year || !month || !branchId) {
+      return NextResponse.json(
+        { error: "year, month y branchId son requeridos" },
+        { status: 400 },
+      );
+    }
+
+    const parsedYear = Number(year);
+    const parsedMonth = Number(month);
+
+    if (
+      Number.isNaN(parsedYear) ||
+      Number.isNaN(parsedMonth) ||
+      parsedMonth < 1 ||
+      parsedMonth > 12
+    ) {
+      return NextResponse.json(
+        { error: "Mes o año inválido" },
+        { status: 400 },
+      );
+    }
+
+    const monthStart = getMonthStart(parsedYear, parsedMonth);
+    const nextMonthStart = getNextMonthStart(monthStart);
+
+    const branch = await prisma.branch.findFirst({
+      where: { id: branchId, userId },
+      select: { id: true },
+    });
+
+    if (!branch) {
+      return NextResponse.json(
+        { error: "Sucursal no encontrada" },
+        { status: 404 },
+      );
+    }
+
+    const products = await prisma.product.findMany({
+      where: { userId, branchId },
+      select: { id: true, name: true },
+    });
+
+    const salesByProduct = await prisma.sale.groupBy({
+      by: ["productId"],
+      where: {
+        userId,
+        branchId,
+        saleDate: {
+          gte: monthStart,
+          lt: nextMonthStart,
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    });
+
+    const salesMap = salesByProduct.reduce<Record<string, number>>(
+      (acc, sale) => {
+        if (sale.productId && sale._sum.quantity) {
+          acc[sale.productId] = Number(sale._sum.quantity);
+        }
+        return acc;
+      },
+      {},
+    );
+
+    const productIds = products.map((product) => product.id);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.msummary.deleteMany({
+        where: {
+          product_id: { in: productIds },
+          sales_month: {
+            gte: monthStart,
+            lt: nextMonthStart,
+          },
+        },
+      });
+
+      await tx.msummary.createMany({
+        data: products.map((product) => ({
+          product_id: product.id,
+          product_name: product.name,
+          sales_month: monthStart,
+          sales_value: salesMap[product.id] ?? 0,
+        })),
+      });
+    });
+
+    return NextResponse.json({
+      message: "Recalculación de MSummary completada",
+      year: parsedYear,
+      month: parsedMonth,
+      branchId,
+    });
+  } catch (error) {
+    console.error("POST /projections error:", error);
+    return NextResponse.json(
+      { error: "Error al recalcular MSummary" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function GET() {
   try {
@@ -178,11 +292,21 @@ export async function GET() {
       return acc;
     }, {});
 
-    const forecastKeys = getMonthKeysBetween("2025-04", "2026-03");
-    const forecastMonths = forecastKeys.map(getMonthLabelFromKey);
-    const nextMonthKey = getMonthKey(
-      new Date(today.getFullYear(), today.getMonth() + 1, 1),
+    const currentMonthStart = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1),
     );
+    const nextMonthStart = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1),
+    );
+    const firstForecastMonth = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 11, 1),
+    );
+    const forecastKeys = getMonthKeysBetween(
+      getMonthKey(firstForecastMonth),
+      getMonthKey(nextMonthStart),
+    );
+    const forecastMonths = forecastKeys.map(getMonthLabelFromKey);
+    const nextMonthKey = getMonthKey(nextMonthStart);
 
     const productProjections = products.map((product) => {
       const productSummary = summaryByProductMonth[product.id] ?? {};
@@ -199,10 +323,10 @@ export async function GET() {
       const forecastRecords = forecastKeys.map((key) => {
         const previousKeys = getPreviousMonthKeys(key, 6);
         const prediction = getPreviousMonthAverage(productSummary, key, 6);
-        const actual = productSummary[key] ?? null;
-        const difference = actual !== null ? prediction - actual : null;
+        const actual = productSummary[key] ?? 0;
+        const difference = prediction - actual;
         const percentageError =
-          actual !== null && actual !== 0
+          actual !== 0
             ? Math.abs((prediction - actual) / actual) * 100
             : null;
 

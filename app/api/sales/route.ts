@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 
 const userId = "1";
 
+// Parsear fecha string (YYYY-MM-DD) como zona horaria local, no UTC
+const parseDateAsLocal = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
 export async function GET() {
   try {
     const sales = await prisma.sale.findMany({
@@ -80,7 +86,7 @@ export async function POST(req: Request) {
           productId,
           branchId, // 👈 FIX
           quantity: qty,
-          saleDate: saleDate ? new Date(saleDate) : new Date(),
+          saleDate: saleDate ? parseDateAsLocal(saleDate) : new Date(),
         },
       });
 
@@ -94,7 +100,7 @@ export async function POST(req: Request) {
           type: "OUT",
           previousStock: product.stock,
           newStock,
-          movementDate: saleDate ? new Date(saleDate) : new Date(),
+          movementDate: saleDate ? parseDateAsLocal(saleDate) : new Date(),
         },
       });
 

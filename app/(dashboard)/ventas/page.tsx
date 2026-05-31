@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import Modal from "../../../components/Modal";
 
+// Obtener fecha local en formato YYYY-MM-DD sin conversión a UTC
+const getLocalDateString = (date: Date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 type Sale = {
   id: string;
   quantity: number;
@@ -42,9 +50,7 @@ export default function SalesPage() {
   const [yearFilter, setYearFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [saleDate, setSaleDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [saleDate, setSaleDate] = useState(getLocalDateString());
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"product" | "date" | "quantity">("date");
   const [currentPage, setCurrentPage] = useState(1);
@@ -221,7 +227,7 @@ export default function SalesPage() {
     setSelectedProductId("");
     setSelectedBranchId("");
     setQuantity("");
-    setSaleDate(new Date().toISOString().split("T")[0]);
+    setSaleDate(getLocalDateString());
     setIsModalOpen(false);
   };
 
@@ -557,7 +563,7 @@ export default function SalesPage() {
                     {s.quantity}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(s.movementDate).toLocaleDateString()}
+                    {new Date(s.movementDate).toLocaleDateString("es-ES")}
                   </td>
                 </tr>
               ))}

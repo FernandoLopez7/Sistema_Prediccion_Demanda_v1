@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+// Obtener fecha local en formato YYYY-MM-DD sin conversión a UTC
+const getLocalDateString = (date: Date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 type Material = {
   id: string;
   name: string;
@@ -15,17 +23,13 @@ type Branch = {
   name: string;
 };
 
-const formatDate = (value: string) => value.slice(0, 10);
-
 export default function MaterialReplenishmentsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedMaterialId, setSelectedMaterialId] = useState<string>("");
   const [branchId, setBranchId] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(0);
-  const [movementDate, setMovementDate] = useState<string>(
-    formatDate(new Date().toISOString()),
-  );
+  const [movementDate, setMovementDate] = useState<string>(getLocalDateString());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string>("");
