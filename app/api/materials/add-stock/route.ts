@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 
 const userId = "1";
 
+// Parsear fecha string (YYYY-MM-DD) como zona horaria local, no UTC
+const parseDateAsLocal = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
 export async function POST(req: Request) {
   try {
     const { materialId, quantity, branchId, movementDate } = await req.json();
@@ -52,7 +58,9 @@ export async function POST(req: Request) {
           type: "IN",
           previousStock,
           newStock,
-          movementDate: movementDate ? new Date(movementDate) : new Date(),
+          movementDate: movementDate
+            ? parseDateAsLocal(movementDate)
+            : new Date(),
         },
       });
 

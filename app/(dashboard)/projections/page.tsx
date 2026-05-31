@@ -74,6 +74,13 @@ export default function ProjectionsPage() {
 
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [branchFilter, setBranchFilter] = useState<string>("all");
+  const [showRecalcPanel, setShowRecalcPanel] = useState(false);
+  const [recalcYear, setRecalcYear] = useState<number>(new Date().getFullYear());
+  const [recalcMonth, setRecalcMonth] = useState<number>(new Date().getMonth() + 1);
+  const [recalcBranch, setRecalcBranch] = useState<string>(""
+  );
+  const [recalcLoading, setRecalcLoading] = useState(false);
+  const [recalcMessage, setRecalcMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProjections();
@@ -87,6 +94,7 @@ export default function ProjectionsPage() {
       const projectionData = await res.json();
       setData(projectionData);
       setBranches(projectionData.branches ?? []);
+      setRecalcBranch((prev) => prev || projectionData.branches?.[0]?.id || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
@@ -195,6 +203,66 @@ export default function ProjectionsPage() {
     }
   };
 
+  const monthOptions = [
+    { value: 1, label: "Enero" },
+    { value: 2, label: "Febrero" },
+    { value: 3, label: "Marzo" },
+    { value: 4, label: "Abril" },
+    { value: 5, label: "Mayo" },
+    { value: 6, label: "Junio" },
+    { value: 7, label: "Julio" },
+    { value: 8, label: "Agosto" },
+    { value: 9, label: "Septiembre" },
+    { value: 10, label: "Octubre" },
+    { value: 11, label: "Noviembre" },
+    { value: 12, label: "Diciembre" },
+  ];
+
+  const yearOptions = Array.from({ length: 5 }, (_, index) =>
+    new Date().getFullYear() - 2 + index,
+  );
+
+  const recalculateSummary = async () => {
+    if (!recalcBranch) {
+      setRecalcMessage("Selecciona una sucursal para recalcular.");
+      return;
+    }
+
+    setRecalcLoading(true);
+    setRecalcMessage(null);
+
+    try {
+      const response = await fetch("/api/projections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year: recalcYear,
+          month: recalcMonth,
+          branchId: recalcBranch,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Error en la recalculación");
+      }
+
+      setRecalcMessage(
+        `Resumen de ventas actualizado para ${monthOptions.find(
+          (m) => m.value === recalcMonth,
+        )?.label} ${recalcYear} en la sucursal seleccionada.`,
+      );
+      await fetchProjections();
+      setShowRecalcPanel(false);
+    } catch (err) {
+      setRecalcMessage(
+        err instanceof Error ? err.message : "Error en la recalculación",
+      );
+    } finally {
+      setRecalcLoading(false);
+    }
+  };
+
   const getSeverityColor = (severity: string) =>
     severity === "critical"
       ? "bg-red-50 border-red-200 text-red-700"
@@ -231,13 +299,103 @@ export default function ProjectionsPage() {
               salida.
             </p>
           </div>
-          <button
-            onClick={fetchProjections}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition"
-          >
-            Actualizar
-          </button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+            <button
+              onClick={fetchProjections}
+              className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition"
+            >
+              Refrescar datos
+            </button>
+            <button
+              onClick={() => setShowRecalcPanel((prev) => !prev)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition"
+            >
+              Actualizar
+            </button>
+          </div>
         </div>
+
+        {showRecalcPanel && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6 border border-indigo-100">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="grid gap-4 sm:grid-cols-3 flex-1">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Año
+                  </label>
+                  <select
+                    value={recalcYear}
+                    onChange={(e) => setRecalcYear(Number(e.target.value))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {yearOptions.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Mes
+                  </label>
+                  <select
+                    value={recalcMonth}
+                    onChange={(e) => setRecalcMonth(Number(e.target.value))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {monthOptions.map((month) => (
+                      <option key={month.value} value={month.value}>
+                        {month.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Sucursal
+                  </label>
+                  <select
+                    value={recalcBranch}
+                    onChange={(e) => setRecalcBranch(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">Selecciona una sucursal</option>
+                    {branches.map((branch) => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:items-end">
+                <button
+                  onClick={recalculateSummary}
+                  disabled={recalcLoading}
+                  className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {recalcLoading ? "Recalculando..." : "Actualizar resumen de ventas"}
+                </button>
+                <button
+                  onClick={() => setShowRecalcPanel(false)}
+                  type="button"
+                  className="inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition"
+                >
+                  Cerrar panel
+                </button>
+              </div>
+            </div>
+            {recalcMessage && (
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                {recalcMessage}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Alertas */}
         {data.alerts.length > 0 && (
