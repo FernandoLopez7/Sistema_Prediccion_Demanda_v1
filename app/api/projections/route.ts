@@ -326,9 +326,7 @@ export async function GET() {
         const actual = productSummary[key] ?? 0;
         const difference = prediction - actual;
         const percentageError =
-          actual !== 0
-            ? Math.abs((prediction - actual) / actual) * 100
-            : null;
+          actual !== 0 ? Math.abs((prediction - actual) / actual) * 100 : null;
 
         return {
           key,

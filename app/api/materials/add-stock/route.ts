@@ -58,7 +58,9 @@ export async function POST(req: Request) {
           type: "IN",
           previousStock,
           newStock,
-          movementDate: movementDate ? parseDateAsLocal(movementDate) : new Date(),
+          movementDate: movementDate
+            ? parseDateAsLocal(movementDate)
+            : new Date(),
         },
       });
 

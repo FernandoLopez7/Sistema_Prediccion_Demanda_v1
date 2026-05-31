@@ -29,7 +29,8 @@ export default function MaterialReplenishmentsPage() {
   const [selectedMaterialId, setSelectedMaterialId] = useState<string>("");
   const [branchId, setBranchId] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(0);
-  const [movementDate, setMovementDate] = useState<string>(getLocalDateString());
+  const [movementDate, setMovementDate] =
+    useState<string>(getLocalDateString());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string>("");
