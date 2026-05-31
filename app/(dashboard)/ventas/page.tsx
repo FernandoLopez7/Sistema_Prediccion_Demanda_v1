@@ -39,6 +39,8 @@ export default function SalesPage() {
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [branchFilter, setBranchFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
   const [quantity, setQuantity] = useState("");
   const [saleDate, setSaleDate] = useState(
     new Date().toISOString().split("T")[0],
@@ -70,6 +72,33 @@ export default function SalesPage() {
     };
     load();
   }, []);
+
+  const sortedProducts = [...products].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
+  const filteredProductsByBranch = selectedBranchId
+    ? sortedProducts.filter((product) => product.branchId === selectedBranchId)
+    : [];
+
+  const availableYears = Array.from(
+    new Set(sales.map((sale) => new Date(sale.movementDate).getFullYear())),
+  ).sort((a, b) => b - a);
+
+  const monthOptions = [
+    { value: "1", label: "Enero" },
+    { value: "2", label: "Febrero" },
+    { value: "3", label: "Marzo" },
+    { value: "4", label: "Abril" },
+    { value: "5", label: "Mayo" },
+    { value: "6", label: "Junio" },
+    { value: "7", label: "Julio" },
+    { value: "8", label: "Agosto" },
+    { value: "9", label: "Septiembre" },
+    { value: "10", label: "Octubre" },
+    { value: "11", label: "Noviembre" },
+    { value: "12", label: "Diciembre" },
+  ];
 
   // ✅ EDITAR MATCH
   const updateMatch = (index: number, productId: string) => {
@@ -150,6 +179,11 @@ export default function SalesPage() {
       return;
     }
 
+    if (product.branchId !== selectedBranchId) {
+      alert("El producto seleccionado no pertenece a la sucursal elegida");
+      return;
+    }
+
     const qty = Number(quantity);
 
     if (!Number.isFinite(qty) || qty <= 0) {
@@ -193,11 +227,18 @@ export default function SalesPage() {
 
   // Filtrado y ordenamiento de ventas
   const filteredSales = sales
-    .filter(
-      (sale) =>
+    .filter((sale) => {
+      const saleDateObject = new Date(sale.movementDate);
+      const saleYear = saleDateObject.getFullYear();
+      const saleMonth = String(saleDateObject.getMonth() + 1);
+
+      return (
         (!branchFilter || sale.branch?.id === branchFilter) &&
-        sale.product.name.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
+        (!yearFilter || String(saleYear) === yearFilter) &&
+        (!monthFilter || saleMonth === monthFilter) &&
+        sale.product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    })
     .sort((a, b) => {
       if (sortBy === "product") {
         return a.product.name.localeCompare(b.product.name);
@@ -216,9 +257,9 @@ export default function SalesPage() {
   );
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="min-h-screen bg-gray-50 p-6 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Ventas</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Ventas</h1>
         <button
           onClick={() => {
             resetManualForm();
@@ -239,17 +280,20 @@ export default function SalesPage() {
         <div className="space-y-5">
           <div className="flex flex-col">
             <label className="text-sm font-medium text-gray-700 mb-1.5">
-              Producto
+              Sucursal
             </label>
             <select
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
+              value={selectedBranchId}
+              onChange={(e) => {
+                setSelectedBranchId(e.target.value);
+                setSelectedProductId("");
+              }}
               className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             >
-              <option value="">Seleccionar producto</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
+              <option value="">Seleccionar sucursal</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
                 </option>
               ))}
             </select>
@@ -257,17 +301,22 @@ export default function SalesPage() {
 
           <div className="flex flex-col">
             <label className="text-sm font-medium text-gray-700 mb-1.5">
-              Sucursal
+              Producto
             </label>
             <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+              disabled={!selectedBranchId}
+              className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition disabled:bg-gray-100"
             >
-              <option value="">Seleccionar sucursal</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
+              <option value="">
+                {selectedBranchId
+                  ? "Seleccionar producto"
+                  : "Seleccionar sucursal primero"}
+              </option>
+              {filteredProductsByBranch.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
                 </option>
               ))}
             </select>
@@ -392,8 +441,8 @@ export default function SalesPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Ventas Registradas
         </h2>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full max-w-2xl mb-4">
-          <div className="relative flex-1">
+        <div className="grid gap-3 w-full max-w-4xl mb-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="relative col-span-2">
             <svg
               className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
               fill="none"
@@ -428,6 +477,38 @@ export default function SalesPage() {
             {branches.map((branch) => (
               <option key={branch.id} value={branch.id}>
                 {branch.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={yearFilter}
+            onChange={(e) => {
+              setYearFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Todos los años</option>
+            {availableYears.map((year) => (
+              <option key={year} value={String(year)}>
+                {year}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={monthFilter}
+            onChange={(e) => {
+              setMonthFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Todos los meses</option>
+            {monthOptions.map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
               </option>
             ))}
           </select>

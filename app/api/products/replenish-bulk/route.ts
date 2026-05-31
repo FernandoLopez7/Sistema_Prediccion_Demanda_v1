@@ -62,7 +62,6 @@ export async function POST(req: Request) {
             product: { connect: { id: item.productId } },
             user: { connect: { id: userId } },
             branch: branchId ? { connect: { id: branchId } } : undefined,
-            family: familyId ? { connect: { id: familyId } } : undefined,
             quantity: item.quantity,
             type: "IN",
             previousStock,

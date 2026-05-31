@@ -7,62 +7,52 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  MANAGER
-  VIEWER
-}
-
 model Unit {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-
-  products  Product[]
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now()) @map("created_at")
   materials Material[]
+  products  Product[]
 
   @@map("units")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  googleId  String?  @unique @map("google_id")
-  name      String?
-  role      Role     @default(VIEWER) // 👈 NUEVO
-  createdAt DateTime @default(now()) @map("created_at")
-
+  id             String          @id @default(cuid())
+  email          String          @unique
+  googleId       String?         @unique @map("google_id")
+  name           String?
+  role           Role            @default(VIEWER)
+  createdAt      DateTime        @default(now()) @map("created_at")
   Branches       Branch[]
   families       Family[]
-  stockMovements StockMovement[]
   materials      Material[]
   products       Product[]
   sales          Sale[]
+  stockMovements StockMovement[]
 
   @@map("users")
 }
 
 model Branch {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  name      String
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user          User           @relation(fields: [userId], references: [id])
-  products      Product[]
-  materials     Material[]
-  sales         Sale[]
+  id             String          @id @default(cuid())
+  userId         String          @map("user_id")
+  name           String
+  createdAt      DateTime        @default(now()) @map("created_at")
+  user           User            @relation(fields: [userId], references: [id])
+  materials      Material[]
+  products       Product[]
+  sales          Sale[]
   stockMovements StockMovement[]
 
   @@map("branches")
 }
 
 model Family {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
   name      String
-  createdAt DateTime @default(now()) @map("created_at")
-
+  createdAt DateTime  @default(now()) @map("created_at")
   user      User      @relation(fields: [userId], references: [id])
   products  Product[]
 
@@ -74,17 +64,18 @@ model Product {
   userId         String          @map("user_id")
   name           String
   code           String?
-  unitId         String          @map("unit_id")
-  stock          Float           @default(0) // 👈 NUEVO
   safetyStock    Float           @default(0) @map("safety_stock")
   active         Boolean         @default(true)
-  familyId       String?         @map("family_id")
   createdAt      DateTime        @default(now()) @map("created_at")
+  stock          Float           @default(0)
   branchId       String          @map("Sucursal")
-  unit           Unit            @relation(fields: [unitId], references: [id])
+  unitId         String          @map("unit_id")
+  familyId       String?         @map("family_id")
+  msummary       msummary[]
   branch         Branch          @relation(fields: [branchId], references: [id])
-  user           User            @relation(fields: [userId], references: [id])
   family         Family?         @relation(fields: [familyId], references: [id])
+  unit           Unit            @relation(fields: [unitId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
   recipes        Recipe[]
   sales          Sale[]
   stockMovements StockMovement[]
@@ -93,25 +84,25 @@ model Product {
 }
 
 model Material {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  name         String   @map("producto")
-  code         String?  @map("codificacion")
-  unitId       String   @map("unit_id")
-  stock        Float    @default(0) @map("actual")
-  previous     Float?   @map("anterior")
-  entries      Float?   @map("entradas")
-  exits        Float?   @map("salidas")
-  average      Float?   @map("promedio")
-  unitPrice    Float?   @map("precio_unitario")
-  warehouse    String?  @map("bodega_insumos")
-  reorderPoint Float?   @map("reorder_point")
-  branchId     String   @map("Sucursal")
-  unit         Unit     @relation(fields: [unitId], references: [id])
-  branch       Branch   @relation(fields: [branchId], references: [id])
-  createdAt    DateTime @default(now()) @map("created_at")
-  user         User     @relation(fields: [userId], references: [id])
-  recipes      Recipe[]
+  id             String          @id @default(cuid())
+  userId         String          @map("user_id")
+  name           String          @map("producto")
+  code           String?         @map("codificacion")
+  stock          Float           @default(0) @map("actual")
+  previous       Float?          @map("anterior")
+  entries        Float?          @map("entradas")
+  exits          Float?          @map("salidas")
+  average        Float?          @map("promedio")
+  unitPrice      Float?          @map("precio_unitario")
+  warehouse      String?         @map("bodega_insumos")
+  reorderPoint   Float?          @map("reorder_point")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  branchId       String          @map("Sucursal")
+  unitId         String          @map("unit_id")
+  branch         Branch          @relation(fields: [branchId], references: [id])
+  unit           Unit            @relation(fields: [unitId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
+  recipes        Recipe[]
   stockMovements StockMovement[]
 
   @@map("materials")
@@ -136,39 +127,53 @@ model Sale {
   quantity    Float
   saleDate    DateTime @map("sale_date")
   xmlFilename String?  @map("xml_filename")
+  createdAt   DateTime @default(now()) @map("created_at")
   branchId    String   @map("Sucursal")
   branch      Branch   @relation(fields: [branchId], references: [id])
-  createdAt   DateTime @default(now()) @map("created_at")
   product     Product  @relation(fields: [productId], references: [id])
   user        User     @relation(fields: [userId], references: [id])
 
   @@map("sales")
 }
 
+model StockMovement {
+  id            String       @id @default(cuid())
+  productId     String?      @map("product_id")
+  userId        String       @map("user_id")
+  quantity      Float?
+  type          MovementType
+  createdAt     DateTime     @default(now()) @map("created_at")
+  newStock      Float?
+  previousStock Float?
+  branchId      String?      @map("branch_id")
+  materialId    String?      @map("material_id")
+  movementDate  DateTime     @default(now()) @map("movement_date")
+  notes         String?
+  branch        Branch?      @relation(fields: [branchId], references: [id])
+  material      Material?    @relation(fields: [materialId], references: [id])
+  product       Product?     @relation(fields: [productId], references: [id])
+  user          User         @relation(fields: [userId], references: [id])
+
+  @@map("stock_movements")
+}
+
+model msummary {
+  id           Int       @id @default(autoincrement())
+  product_id   String?
+  product_name String?
+  sales_month  DateTime? @db.Date
+  sales_value  Int?
+  products     Product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "productfk")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
 enum MovementType {
   IN
   OUT
   ADJUSTMENT
-}
-
-model StockMovement {
-  id            String       @id @default(cuid())
-  productId     String?      @map("product_id")
-  materialId    String?      @map("material_id")
-  userId        String       @map("user_id")
-  branchId      String?      @map("branch_id")
-  quantity      Float?
-  type          MovementType // "IN" | "OUT" | "ADJUSTMENT"
-  previousStock Float?
-  newStock      Float?
-  notes         String?      // 👈 Campo agregado
-  movementDate  DateTime     @default(now()) @map("movement_date")
-  createdAt     DateTime     @default(now()) @map("created_at")
-
-  product  Product? @relation(fields: [productId], references: [id])
-  material Material? @relation(fields: [materialId], references: [id])
-  branch   Branch?   @relation(fields: [branchId], references: [id])
-  user     User      @relation(fields: [userId], references: [id])
-
-  @@map("stock_movements")
 }

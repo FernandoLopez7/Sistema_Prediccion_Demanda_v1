@@ -23,7 +23,7 @@ export async function GET() {
           select: { name: true } // 🔥 nombre unidad
         },
         branch: {
-          select: { name: true } // 🔥 nombre sucursal
+          select: { id: true, name: true } // 🔥 id y nombre sucursal
         },
         family: {
           select: { name: true } // 🔥 nombre familia

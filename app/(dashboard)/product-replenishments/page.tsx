@@ -14,6 +14,7 @@ type Product = {
     name: string;
   };
   branch: {
+    id?: string;
     name: string;
   };
 };
@@ -43,7 +44,10 @@ export default function ProductReplenishmentsPage() {
   const fetchProducts = async () => {
     const res = await fetch("/api/products");
     const data = await res.json();
-    setProducts(data);
+    const sorted = Array.isArray(data)
+      ? data.slice().sort((a, b) => a.name.localeCompare(b.name))
+      : [];
+    setProducts(sorted);
   };
 
   const fetchBranches = async () => {
@@ -53,9 +57,33 @@ export default function ProductReplenishmentsPage() {
   };
 
   useEffect(() => {
-    fetchProducts();
-    fetchBranches();
+    (async () => {
+      await fetchProducts();
+      await fetchBranches();
+    })();
   }, []);
+
+  // When branch changes, clear any selected products that don't belong to it
+  useEffect(() => {
+    if (!bulkStockBranchId) return;
+
+    // defer update to avoid synchronous setState within effect
+    const t = window.setTimeout(() => {
+      setBulkStockItems((prev) =>
+        prev.map((item) => {
+          if (!item.productId) return item;
+          const p = products.find((prod) => prod.id === item.productId);
+          if (!p) return { ...item, productId: "" };
+          if (p.branch?.id && p.branch.id !== bulkStockBranchId) {
+            return { ...item, productId: "" };
+          }
+          return item;
+        }),
+      );
+    }, 0);
+
+    return () => window.clearTimeout(t);
+  }, [bulkStockBranchId, products]);
 
   // =============================
   // FUNCTIONS
@@ -74,8 +102,8 @@ export default function ProductReplenishmentsPage() {
     setBulkStockItems([...bulkStockItems, { productId: "", quantity: "" }]);
   };
 
-  const removeBulkStockRow = (index: number) => {
-    setBulkStockItems(bulkStockItems.filter((_, idx) => idx !== index));
+  const removeBulkStockItem = (index: number) => {
+    setBulkStockItems((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const saveBulkStock = async () => {
@@ -181,55 +209,81 @@ export default function ProductReplenishmentsPage() {
                 </button>
               </div>
 
-              {bulkStockItems.map((item, index) => (
-                <div
-                  key={`${item.productId}-${index}`}
-                  className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_auto] items-end p-4 border border-gray-200 rounded-lg bg-gray-50"
-                >
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1.5">
-                      Producto
-                    </label>
-                    <select
-                      className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
-                      value={item.productId}
-                      onChange={(e) =>
-                        updateBulkStockItem(index, "productId", e.target.value)
-                      }
-                    >
-                      <option value="">Seleccionar producto</option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              {bulkStockItems.map((item, index) => {
+                const filteredProducts = bulkStockBranchId
+                  ? products.filter((p) => p.branch?.id === bulkStockBranchId)
+                  : products;
 
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1.5">
-                      Cantidad
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        updateBulkStockItem(index, "quantity", e.target.value)
-                      }
-                    />
-                  </div>
+                const noBranchSelected = !bulkStockBranchId;
 
-                  <button
-                    onClick={() => removeBulkStockRow(index)}
-                    className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-colors duration-200"
-                    type="button"
+                return (
+                  <div
+                    key={`${item.productId}-${index}`}
+                    className="p-4 border border-gray-200 rounded-lg bg-gray-50"
                   >
-                    Eliminar
-                  </button>
-                </div>
-              ))}
+                    {/* Producto: ocupando toda la linea */}
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-700 mb-1.5">
+                        Producto
+                      </label>
+                      <select
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
+                        value={item.productId}
+                        onChange={(e) =>
+                          updateBulkStockItem(
+                            index,
+                            "productId",
+                            e.target.value,
+                          )
+                        }
+                        disabled={noBranchSelected}
+                      >
+                        <option value="">
+                          {noBranchSelected
+                            ? "Seleccionar sucursal primero"
+                            : "Seleccionar producto"}
+                        </option>
+                        {filteredProducts.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Cantidad + eliminar en una fila separada */}
+                    <div className="flex gap-4 mt-3 items-end">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium text-gray-700 mb-1.5">
+                          Cantidad
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateBulkStockItem(
+                              index,
+                              "quantity",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="w-32">
+                        <button
+                          onClick={() => removeBulkStockItem(index)}
+                          className="w-full px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex gap-3 pt-6 border-t border-gray-200">

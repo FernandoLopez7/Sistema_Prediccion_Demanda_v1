@@ -56,6 +56,10 @@ export async function POST(req: Request) {
         throw new Error("Producto no encontrado");
       }
 
+      if (product.branchId !== branchId) {
+        throw new Error("El producto no pertenece a la sucursal seleccionada");
+      }
+
       // 🔴 VALIDAR STOCK
       if (product.stock < qty) {
         throw new Error(`Stock insuficiente. Disponible: ${product.stock}`);
